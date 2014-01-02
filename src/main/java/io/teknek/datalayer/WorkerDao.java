@@ -25,7 +25,9 @@ import io.teknek.plan.Plan;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
@@ -186,8 +188,8 @@ public class WorkerDao {
       try {
         stat = zk.exists(lookAtPath, false);
         byte[] data = zk.getData(lookAtPath, false, stat);
-        results.add(new WorkerStatus(worker, new String(data)));
-      } catch (KeeperException | InterruptedException e) {
+        results.add(new WorkerStatus(worker, new String(data, ENCODING)));
+      } catch (KeeperException | InterruptedException | UnsupportedEncodingException e) {
         logger.error(e);
       }
     }
@@ -204,10 +206,10 @@ public class WorkerDao {
   public static void registerWorkerStatus(ZooKeeper zk, Plan plan, WorkerStatus s) throws WorkerDaoException{
     String writeToPath = PLANS_ZK + "/" + plan.getName() + "/" + s.getWorkerUuid();
     try {
-      zk.create(writeToPath, s.getFeedPartitionId().getBytes(), Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
+      zk.create(writeToPath, s.getFeedPartitionId().getBytes(ENCODING), Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
       logger.debug("Registered as ephemeral "+ writeToPath);
       zk.exists(PLANS_ZK+ "/" + plan.getName(), true);
-    } catch (KeeperException | InterruptedException e) {
+    } catch (KeeperException | InterruptedException | UnsupportedEncodingException e) {
       throw new WorkerDaoException(e);
     }
   }
@@ -292,28 +294,26 @@ public class WorkerDao {
     return b;
   }
 
-  //TODO om can read streams
-  //throw worker dao exceptions..
-  public static Bundle getBundleFromUrl(URL u) {
-    StringBuffer sb = new StringBuffer();
+
+  public static Bundle getBundleFromUrl(URL u) throws WorkerDaoException {
+    Bundle b = null;
+    InputStream is = null;
     try {
       URLConnection yc = u.openConnection();
-      BufferedReader in = new BufferedReader(new InputStreamReader(yc.getInputStream()));
-
-      String inputLine = null;
-      while ((inputLine = in.readLine()) != null)
-        sb.append(inputLine + "\n");
-      in.close();
+      ObjectMapper om = new ObjectMapper();
+      is = yc.getInputStream();
+      b = om.readValue(is, Bundle.class);
     } catch (IOException e) {
       logger.warn(e.getMessage());
-    }
-    ObjectMapper om = new ObjectMapper();
-    Bundle b = null;
-    try {
-      b = om.readValue(sb.toString().getBytes(), Bundle.class);
-    } catch ( IOException e) {
-      logger.warn(e.getMessage());
-      e.printStackTrace();
+      throw new WorkerDaoException(e);
+    } finally {
+      if (is != null) {
+        try {
+          is.close();
+        } catch (IOException e) {
+          logger.debug(e);
+        }
+      }
     }
     return b;
   }
