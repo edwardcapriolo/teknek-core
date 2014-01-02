@@ -15,10 +15,12 @@ limitations under the License.
 */
 package io.teknek.driver;
 
+
 import groovy.lang.Closure;
 import groovy.lang.GroovyClassLoader;
 import groovy.lang.GroovyShell;
 import io.teknek.collector.CollectorProcessor;
+import io.teknek.daemon.TeknekDaemon;
 import io.teknek.feed.Feed;
 import io.teknek.feed.FeedPartition;
 import io.teknek.model.GroovyOperator;
@@ -41,8 +43,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.log4j.Logger;
+
 public class DriverFactory {
 
+  final static Logger logger = Logger.getLogger(DriverFactory.class.getName());
+  
   public static Driver createDriver(FeedPartition feedPartition, Plan plan){
     OperatorDesc desc = plan.getRootOperator();
     Operator oper = buildOperator(desc);
@@ -193,7 +199,9 @@ public class DriverFactory {
       URL u = null;
       try {
         u = new URL(s);
-      } catch (MalformedURLException e) { }
+      } catch (MalformedURLException e) { 
+        logger.info("Specified url " + s + "could not be parsed");
+      }
       if (u != null){
         urls.add(u);
       }

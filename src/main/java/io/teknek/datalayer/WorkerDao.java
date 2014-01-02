@@ -49,8 +49,10 @@ import org.codehaus.jackson.map.ObjectMapper;
  *
  */
 public class WorkerDao {
-
+  
   final static Logger logger = Logger.getLogger(WorkerDao.class.getName());
+  
+  final static String ENCODING = "UTF-8";
   /**
    * Base directory of the entire application
    */
@@ -245,8 +247,9 @@ public class WorkerDao {
     String readPath = SAVED_ZK + "/" + group + "-" + name + "-" + "operatorDesc";
     createZookeeperBase(zk);
     try {
-      String s = zk.create(readPath, serializeOperatorDesc(desc), Ids.OPEN_ACL_UNSAFE,
+      String pathCreated = zk.create(readPath, serializeOperatorDesc(desc), Ids.OPEN_ACL_UNSAFE,
               CreateMode.PERSISTENT);
+      logger.debug("Created " + pathCreated);
     } catch (KeeperException | InterruptedException | IOException e) {
       throw new WorkerDaoException(e);
     }
@@ -257,8 +260,9 @@ public class WorkerDao {
     String readPath = SAVED_ZK + "/" + group + "-" + name + "-" + "feedDesc";
     createZookeeperBase(zk);
     try {
-      String s = zk.create(readPath, serializeFeedDesc(desc), Ids.OPEN_ACL_UNSAFE,
+      String pathCreated = zk.create(readPath, serializeFeedDesc(desc), Ids.OPEN_ACL_UNSAFE,
               CreateMode.PERSISTENT);
+      logger.debug("Created " + pathCreated);
     } catch (KeeperException | InterruptedException | IOException e) {
       throw new WorkerDaoException(e);
     }

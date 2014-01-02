@@ -39,4 +39,9 @@ public abstract class Operator {
   public ICollector getCollector(){
     return this.collector;
   }
+
+  public Map<String, Object> getProperties() {
+    return properties;
+  }
+  
 }
