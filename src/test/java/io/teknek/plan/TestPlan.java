@@ -16,6 +16,7 @@ limitations under the License.
 package io.teknek.plan;
 
 import io.teknek.datalayer.WorkerDao;
+import io.teknek.datalayer.WorkerDaoException;
 import io.teknek.driver.Minus1Operator;
 import io.teknek.driver.TestDriver;
 import io.teknek.driver.Times2Operator;
@@ -83,7 +84,7 @@ public class TestPlan {
   }
   
   @Test
-  public void alsoPersistAndRestore() throws JsonParseException, JsonMappingException, IOException{
+  public void alsoPersistAndRestore() throws JsonParseException, JsonMappingException, IOException, WorkerDaoException {
     Plan p = getPlanWithZookeeperStorage();
     byte [] b = WorkerDao.serializePlan(p);
     Plan p1 = WorkerDao.deserializePlan(b);

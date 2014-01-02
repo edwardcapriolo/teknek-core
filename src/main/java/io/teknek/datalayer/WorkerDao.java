@@ -144,13 +144,13 @@ public class WorkerDao {
     return p1;
   }
   
-  public static byte[] serializePlan(Plan plan) {
+  public static byte[] serializePlan(Plan plan) throws WorkerDaoException {
     ObjectMapper map = new ObjectMapper();
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     try {
       map.writeValue(baos, plan);
     } catch (IOException ex) {
-      logger.error(ex);
+      throw new WorkerDaoException(ex);
     }
     return baos.toByteArray();
   }
@@ -174,7 +174,8 @@ public class WorkerDao {
   
   public static void createEphemeralNodeForDaemon(ZooKeeper zk, TeknekDaemon d) throws WorkerDaoException {
     try {
-      zk.create(WORKERS_ZK +"/"+d.getMyId().toString(), new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
+      zk.create(WORKERS_ZK + "/" + d.getMyId().toString(), new byte[0], Ids.OPEN_ACL_UNSAFE,
+              CreateMode.EPHEMERAL);
     } catch (KeeperException | InterruptedException e) {
       throw new WorkerDaoException(e);
     }
