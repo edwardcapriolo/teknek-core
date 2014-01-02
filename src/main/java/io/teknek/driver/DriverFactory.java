@@ -20,7 +20,6 @@ import groovy.lang.Closure;
 import groovy.lang.GroovyClassLoader;
 import groovy.lang.GroovyShell;
 import io.teknek.collector.CollectorProcessor;
-import io.teknek.daemon.TeknekDaemon;
 import io.teknek.feed.Feed;
 import io.teknek.feed.FeedPartition;
 import io.teknek.model.GroovyOperator;
@@ -34,6 +33,7 @@ import io.teknek.plan.OperatorDesc;
 import io.teknek.plan.Plan;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
@@ -47,6 +47,7 @@ import org.apache.log4j.Logger;
 
 public class DriverFactory {
 
+  public static final String ENCODING = "UTF-8";
   final static Logger logger = Logger.getLogger(DriverFactory.class.getName());
   
   public static Driver createDriver(FeedPartition feedPartition, Plan plan){
@@ -58,7 +59,11 @@ public class DriverFactory {
       offsetStorage = buildOffsetStorage(feedPartition, plan, offsetDesc);
       Offset offset = offsetStorage.findLatestPersistedOffset();
       if (offset != null){
-        feedPartition.setOffset(new String(offset.serialize()));
+        try {
+          feedPartition.setOffset(new String(offset.serialize(),ENCODING));
+        } catch (UnsupportedEncodingException e) {
+          throw new RuntimeException (ENCODING + " must be supported" , e);
+        }
       }
     }
     CollectorProcessor cp = new CollectorProcessor();
@@ -186,6 +191,8 @@ public class DriverFactory {
         e.printStackTrace();
         throw new RuntimeException(e);
       }
+    } else {
+      throw new RuntimeException("Do not know what to do with "+feedDesc.getSpec());
     }
     feed.setName(feedDesc.getName());
     feed.setProperties(feedDesc.getProperties());

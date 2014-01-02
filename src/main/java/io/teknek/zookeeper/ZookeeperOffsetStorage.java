@@ -1,6 +1,7 @@
 package io.teknek.zookeeper;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.Map;
 
 import org.apache.zookeeper.CreateMode;
@@ -17,6 +18,8 @@ import io.teknek.offsetstorage.OffsetStorage;
 import io.teknek.plan.Plan;
 
 public class ZookeeperOffsetStorage extends OffsetStorage {
+  
+  public static final String ENCODING = "UTF-8";
   
   public static final String TEKNEK_ROOT = "/teknek";
 
@@ -49,7 +52,12 @@ public class ZookeeperOffsetStorage extends OffsetStorage {
  
   @Override
   public Offset getCurrentOffset(){
-      ZookeeperOffset zko = new ZookeeperOffset(feedPartiton.getOffset().getBytes());
+      ZookeeperOffset zko;
+      try {
+        zko = new ZookeeperOffset(feedPartiton.getOffset().getBytes(ENCODING));
+      } catch (UnsupportedEncodingException e) {
+        throw new RuntimeException ("should be " + ZookeeperOffsetStorage.ENCODING, e);
+      }
       return zko;
   }
 
@@ -97,12 +105,20 @@ class ZookeeperOffset extends Offset {
   
   public ZookeeperOffset(byte[] bytes) {
     super(bytes);
-    offset = new String(bytes);
+    try {
+      offset = new String(bytes, ZookeeperOffsetStorage.ENCODING);
+    } catch (UnsupportedEncodingException e) {
+      throw new RuntimeException ("should be " + ZookeeperOffsetStorage.ENCODING, e);
+    }
   }
   
   @Override
   public byte[] serialize() {
-    return offset.getBytes();
+    try {
+      return offset.getBytes(ZookeeperOffsetStorage.ENCODING);
+    } catch (UnsupportedEncodingException e) {
+      throw new RuntimeException ("should be " + ZookeeperOffsetStorage.ENCODING, e);
+    }
   }
   
 }
