@@ -16,15 +16,13 @@ limitations under the License.
 package io.teknek.model;
 
 /**
- * A component that accepts tuples potentially storing or forwarding
- * either way the client is un-aware
- *
- */ 
+ * A component that accepts tuples potentially storing or forwarding them. Either way the client is
+ * un-aware.
+ * 
+ */
 public abstract class ICollector {
   /**
-   * Note: we may remove the source later
    * @param out
    */
   public abstract void emit(ITuple out);
 }
-

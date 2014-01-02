@@ -17,22 +17,22 @@ package io.teknek.collector;
 
 import io.teknek.model.ICollector;
 import io.teknek.model.ITuple;
-import io.teknek.model.Tuple;
 
 import java.util.concurrent.ArrayBlockingQueue;
 
  
 /**
  * Positioned between two operators. emit take and peek work
- * on an underlying blocking queue which should offer flow control.
+ * on an underlying blocking queue which should offers flow control.
  *
  */
 public class Collector extends ICollector {
 
+  public static final int DEFAULT_QUEUE_SIZE = 4000;
   private ArrayBlockingQueue<ITuple> collected;
 
   public Collector(){
-    collected = new ArrayBlockingQueue<ITuple>(4000);
+    collected = new ArrayBlockingQueue<ITuple>(DEFAULT_QUEUE_SIZE);
   }
   
   @Override
@@ -40,10 +40,20 @@ public class Collector extends ICollector {
     collected.add(out);
   }
 
+  /**
+   * Take the next tuple off the queue blocking until the next arrives
+   * @return
+   * @throws InterruptedException
+   */
   public ITuple take() throws InterruptedException{
     return collected.take();
   }
   
+  /**
+   * Peek at the next tuple without pulling it off the queue
+   * @return
+   * @throws InterruptedException
+   */
   public ITuple peek() throws InterruptedException{
     return collected.peek();
   }

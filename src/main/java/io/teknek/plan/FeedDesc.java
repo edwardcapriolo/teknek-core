@@ -17,11 +17,21 @@ package io.teknek.plan;
 
 import java.util.Map;
 
+/**
+ * A FeedDesc is the configuration used by a plan.
+ * @author edward
+ *
+ */
 public class FeedDesc extends DynamicInstantiatable {
   
-
   @SuppressWarnings("rawtypes")
+  /**
+   * Properties used to initialize the feed
+   */
   private Map properties;
+  /**
+   * The name of the feed inside the Plan. Currently plan's only support a single feed.
+   */
   private String name;
   
   public FeedDesc(){
