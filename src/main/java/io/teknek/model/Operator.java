@@ -12,36 +12,61 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-*/
+ */
 package io.teknek.model;
 
 import java.util.Map;
 
 /**
- * Represents processing logic 
- *
+ * Represents processing logic. An operator takes a tuple as input and emits 0 or more tuples to the
+ * output collector.
+ * 
  */
 public abstract class Operator {
 
-  protected Map<String,Object> properties;
+  /**
+   * Configuration properties that are passed at initialization to the operator
+   */
+  protected Map<String, Object> properties;
+
+  /**
+   * Container that holds tuples emitted from the operator
+   */
   protected ICollector collector;
-  
-  public void setProperties(Map<String,Object> properties){
+
+  public Operator() {
+    super();
+  }
+
+  /**
+   * Sets the properties of the operator. Called once after object construction and before the plan
+   * is started
+   * 
+   * @param properties
+   */
+  public void setProperties(Map<String, Object> properties) {
     this.properties = properties;
   }
-  
-  public abstract void handleTuple(ITuple t);
-  
-  public void setCollector(ICollector i){
+
+  /**
+   * Do some type of processing on this tuple. Note in many cases if this operator emit's a tuple a
+   * new object should be created.
+   * 
+   * @param tuple
+   *          an input tuple
+   */
+  public abstract void handleTuple(ITuple tuple);
+
+  public void setCollector(ICollector i) {
     this.collector = i;
   }
-  
-  public ICollector getCollector(){
+
+  public ICollector getCollector() {
     return this.collector;
   }
 
   public Map<String, Object> getProperties() {
     return properties;
   }
-  
+
 }
