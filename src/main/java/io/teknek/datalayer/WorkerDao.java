@@ -46,7 +46,6 @@ import org.codehaus.jackson.map.ObjectMapper;
 
 /**
  * This component deals with persistence into zk for the worker node
- * note: we likely want a custom exception here
  * @author edward
  *
  */
@@ -72,7 +71,7 @@ public class WorkerDao {
    */
   public static final String SAVED_ZK = BASE_ZK + "/saved";
   /**
-   * Holds zk locks for chosing plans
+   * Holds zk locks for choosing plans
    */
   public static final String LOCKS_ZK = BASE_ZK + "/locks";
   
@@ -85,7 +84,7 @@ public class WorkerDao {
   public static void createZookeeperBase(ZooKeeper zk) throws WorkerDaoException {
     try {
       if (zk.exists(BASE_ZK, true) == null) {
-        logger.info("Creating "+BASE_ZK+" heirarchy");
+        logger.info("Creating " + BASE_ZK + " heirarchy");
         zk.create(BASE_ZK, new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
       }
       if (zk.exists(WORKERS_ZK, false) == null) {
@@ -100,15 +99,22 @@ public class WorkerDao {
       if (zk.exists(LOCKS_ZK, false) == null) {
         zk.create(LOCKS_ZK, new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
       }
-    } catch (KeeperException  | InterruptedException e) {
-      e.printStackTrace();
+    } catch (KeeperException | InterruptedException e) {
       throw new WorkerDaoException(e);
-    } 
+    }
   }
   
-  public static List<String> findWorkersWorkingOnPlan(ZooKeeper zk, Plan p) throws WorkerDaoException{
+  /**
+   * Returns the node name of all the ephemeral nodes under a plan. This is effectively who is
+   * working on the plan.
+   * @param zk
+   * @param plan
+   * @return 
+   * @throws WorkerDaoException If there are zookeeper problems
+   */
+  public static List<String> findWorkersWorkingOnPlan(ZooKeeper zk, Plan plan) throws WorkerDaoException{
     try {
-      return zk.getChildren(PLANS_ZK + "/" + p.getName(), false);
+      return zk.getChildren(PLANS_ZK + "/" + plan.getName(), false);
     } catch (KeeperException | InterruptedException e) {
       throw new WorkerDaoException(e);
     }
@@ -127,7 +133,13 @@ public class WorkerDao {
       throw new WorkerDaoException(e);
     }
   }
-  
+  /**
+   * Search zookeeper for a plan with given name. 
+   * @param zk
+   * @param name
+   * @return
+   * @throws WorkerDaoException if plan does not exist or there is a problem deserializing it.
+   */
   public static Plan findPlanByName(ZooKeeper zk, String name) throws WorkerDaoException {
     try {
       Stat s = zk.exists(PLANS_ZK + "/"+ name, false);
@@ -138,7 +150,8 @@ public class WorkerDao {
     } 
   }
   
-  public static Plan deserializePlan(byte [] b) throws JsonParseException, JsonMappingException, IOException{
+  public static Plan deserializePlan(byte[] b) throws JsonParseException, JsonMappingException,
+          IOException {
     ObjectMapper om = new ObjectMapper();
     Plan p1 = om.readValue(b, Plan.class);
     return p1;
@@ -155,12 +168,16 @@ public class WorkerDao {
     return baos.toByteArray();
   }
   
-  
+  /**
+   * Creates or updates a plan in zookeeper.
+   * @param plan
+   * @param zk
+   * @throws WorkerDaoException if malformed plan or communication error with zookeeper
+   */
   public static void createOrUpdatePlan(Plan plan, ZooKeeper zk) throws WorkerDaoException {
-      Stat s;
       try {
         WorkerDao.createZookeeperBase(zk);
-        s = zk.exists(PLANS_ZK+ "/" + plan.getName(), false);
+        Stat s = zk.exists(PLANS_ZK+ "/" + plan.getName(), false);
         if (s != null) {
           zk.setData(PLANS_ZK+ "/" + plan.getName(), serializePlan(plan), s.getVersion());
         } else {
@@ -172,6 +189,12 @@ public class WorkerDao {
       }
   }
   
+  /**
+   * Creates an epehemeral node so that we can determine how many current live nodes there are
+   * @param zk
+   * @param d
+   * @throws WorkerDaoException
+   */
   public static void createEphemeralNodeForDaemon(ZooKeeper zk, TeknekDaemon d) throws WorkerDaoException {
     try {
       zk.create(WORKERS_ZK + "/" + d.getMyId().toString(), new byte[0], Ids.OPEN_ACL_UNSAFE,
@@ -181,17 +204,25 @@ public class WorkerDao {
     }
   }
   
-  public static List<WorkerStatus> findAllWorkerStatusForPlan(ZooKeeper zk, Plan plan, List<String> otherWorkers){
+  /**
+   * Gets the status of each worker. The status contains the partitionId being consumed. This information
+   * helps the next worker bind to an unconsumed partition
+   * @param zk
+   * @param plan
+   * @param otherWorkers
+   * @return
+   * @throws WorkerDaoException
+   */
+  public static List<WorkerStatus> findAllWorkerStatusForPlan(ZooKeeper zk, Plan plan, List<String> otherWorkers) throws WorkerDaoException{
     List<WorkerStatus> results = new ArrayList<WorkerStatus>();
     for (String worker : otherWorkers) {
       String lookAtPath = PLANS_ZK + "/" + plan.getName() + "/" + worker;
-      Stat stat = null;
       try {
-        stat = zk.exists(lookAtPath, false);
+        Stat stat = zk.exists(lookAtPath, false);
         byte[] data = zk.getData(lookAtPath, false, stat);
         results.add(new WorkerStatus(worker, new String(data, ENCODING)));
       } catch (KeeperException | InterruptedException | UnsupportedEncodingException e) {
-        logger.error(e);
+        throw new WorkerDaoException(e);
       }
     }
     return results;
