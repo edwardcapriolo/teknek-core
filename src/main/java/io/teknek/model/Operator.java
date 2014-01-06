@@ -49,7 +49,7 @@ public abstract class Operator {
   }
 
   /**
-   * Do some type of processing on this tuple. Note in many cases if this operator emit's a tuple a
+   * Do some type of processing on this tuple. In many cases if this operator emit's a tuple a
    * new object should be created.
    * 
    * @param tuple
@@ -57,8 +57,12 @@ public abstract class Operator {
    */
   public abstract void handleTuple(ITuple tuple);
 
-  public void setCollector(ICollector i) {
-    this.collector = i;
+  /**
+   * Called by the framework and supplied with a collector that will forward tuples on to child operators
+   * @param collector
+   */
+  public void setCollector(ICollector collector) {
+    this.collector = collector;
   }
 
   public ICollector getCollector() {

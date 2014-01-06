@@ -2,6 +2,12 @@ package io.teknek.feed;
 
 import io.teknek.model.ITuple;
 
+/**
+ * Extend only the methods you wish with this handy adapter. Generally used for feeds
+ * that do not have offset management.
+ * @author edward
+ *
+ */
 public class FeedPartitionAdapter extends FeedPartition {
 
   public FeedPartitionAdapter(Feed feed, String partitionId) {

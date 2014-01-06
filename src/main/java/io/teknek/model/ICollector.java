@@ -22,7 +22,8 @@ package io.teknek.model;
  */
 public abstract class ICollector {
   /**
-   * @param out
+   * Receive a tuple and pass it on to child operators.
+   * @param out tuple to be passed on
    */
   public abstract void emit(ITuple out);
 }
