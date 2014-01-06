@@ -30,6 +30,7 @@ import io.teknek.model.Operator;
 import io.teknek.model.Tuple;
 import io.teknek.plan.FeedDesc;
 import io.teknek.plan.OperatorDesc;
+import io.teknek.plan.Plan;
 import io.teknek.plan.TestPlan;
 import io.teknek.util.MapBuilder;
 
@@ -38,6 +39,14 @@ import org.junit.Test;
 
 public class TestDriverFactory {
 
+  @Test
+  public void ensureRootOperatorProperties() {
+    Plan p = TestPlan.getPlan();
+    p.getRootOperator().setParameters(MapBuilder.makeMap("a", "A", "b", 1));
+    Driver driver = DriverFactory.createDriver(TestDriver.getPart(), p);
+    Assert.assertEquals("A", driver.getDriverNode().getOperator().getProperties().get("a"));
+  }
+  
   @Test
   public void aTest() throws InterruptedException{
     Driver driver = DriverFactory.createDriver(TestDriver.getPart(), TestPlan.getPlan());
