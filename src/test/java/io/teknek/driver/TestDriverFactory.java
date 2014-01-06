@@ -18,6 +18,7 @@ package io.teknek.driver;
 import java.io.File;
 import java.net.MalformedURLException;
 import java.util.List;
+import java.util.Map;
 
 import io.teknek.collector.Collector;
 import io.teknek.feed.Feed;
@@ -30,6 +31,7 @@ import io.teknek.model.Tuple;
 import io.teknek.plan.FeedDesc;
 import io.teknek.plan.OperatorDesc;
 import io.teknek.plan.TestPlan;
+import io.teknek.util.MapBuilder;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -68,6 +70,8 @@ public class TestDriverFactory {
     o.setSpec("groovy");
     o.setTheClass("ATry");
     o.setScript("import io.teknek.driver.Minus1Operator\n"+"public class ATry extends Minus1Operator { \n }");
+    Map<String,Object> props = MapBuilder.makeMap("a","A", "b", 1);
+    o.setParameters(props);
     return o;
   }
   
@@ -152,6 +156,7 @@ public class TestDriverFactory {
     Operator operator = DriverFactory.buildOperator(buildGroovyOperatorDesc());
     Assert.assertNotNull(operator);
     Assert.assertEquals ("ATry", operator.getClass().getName());
+    Assert.assertEquals( "A",  operator.getProperties().get("a"));
   }
   
   public static OperatorDesc getIdentityGroovyOperator(){

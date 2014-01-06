@@ -127,6 +127,7 @@ public class DriverFactory {
     } else {
       throw new RuntimeException(operatorDesc.getSpec() +" dont know how to handle that");
     }
+    operator.setProperties(operatorDesc.getParameters());
     return operator;
   }
   
