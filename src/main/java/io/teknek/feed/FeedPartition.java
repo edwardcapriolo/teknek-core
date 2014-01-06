@@ -17,6 +17,11 @@ package io.teknek.feed;
 
 import io.teknek.model.ITuple;
 
+/**
+ * The partition of the feed that acquires data and produces it into the framework 
+ * @author edward
+ *
+ */
 public abstract class FeedPartition {
 
   /**
@@ -35,7 +40,12 @@ public abstract class FeedPartition {
     this.partitionId = partitionId;
   }
   
+  /**
+   * Called from the initialize method of the driver. The job of this
+   * method is to prepare any underlying resources the feed needs to acquire data.
+   */
   public abstract void initialize();
+  
   /**
    * Read the next value from the feed into the tupleRef passed in.
    * Typically class always returns true and blocks on next read until new
@@ -46,6 +56,9 @@ public abstract class FeedPartition {
    */
   public abstract boolean next(ITuple tupleRef);
   
+  /**
+   * Called on termination. Use to clean up any resources of the feed
+   */
   public abstract void close();
 
   public String getPartitionId() {
@@ -65,7 +78,8 @@ public abstract class FeedPartition {
   /**
    * A string that represents the current offset of the feed. The format 
    * is not a general one, each FeedPartition persists strings only meant
-   * to be read back by the same class
+   * to be read back by the same class. If this were a database the string 
+   * could be a representation of the current primary key
    * @return a string which represents the current offset
    */
   public abstract String getOffset();
