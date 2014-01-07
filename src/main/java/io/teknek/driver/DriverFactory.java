@@ -39,11 +39,14 @@ import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
+
+import com.google.common.base.Charsets;
 
 /**
  * Builds instances of Driver for a given plan.
@@ -52,7 +55,6 @@ import org.apache.log4j.Logger;
  */
 public class DriverFactory {
 
-  public static final String ENCODING = "UTF-8";
   final static Logger logger = Logger.getLogger(DriverFactory.class.getName());
   
   /**
@@ -71,11 +73,7 @@ public class DriverFactory {
       offsetStorage = buildOffsetStorage(feedPartition, plan, offsetDesc);
       Offset offset = offsetStorage.findLatestPersistedOffset();
       if (offset != null){
-        try {
-          feedPartition.setOffset(new String(offset.serialize(),ENCODING));
-        } catch (UnsupportedEncodingException e) {
-          throw new RuntimeException (ENCODING + " must be supported" , e);
-        }
+        feedPartition.setOffset(new String(offset.serialize(), Charsets.UTF_8));
       }
     }
     CollectorProcessor cp = new CollectorProcessor();
@@ -207,18 +205,21 @@ public class DriverFactory {
     return feed;
   }
   
-  private static List<URL> parseSpecIntoUrlList(DynamicInstantiatable d){
-    String [] split = d.getScript().split(",");
+  /**
+   * Parse the script information from dynamicInstant... into a List<URL> so a URLClassloader
+   * can load it 
+   * @param dynamic
+   * @return a List of all the non MalformedURLs
+   */
+  private static List<URL> parseSpecIntoUrlList(DynamicInstantiatable dynamic){
+    String [] split = dynamic.getScript().split(",");
     List<URL> urls = new ArrayList<URL>();
     for (String s: split){
-      URL u = null;
       try {
-        u = new URL(s);
-      } catch (MalformedURLException e) { 
-        logger.info("Specified url " + s + "could not be parsed");
-      }
-      if (u != null){
+        URL u = new URL(s);
         urls.add(u);
+      } catch (MalformedURLException e) { 
+        logger.warn("Specified url " + s + "could not be parsed");
       }
     }
     return urls;
