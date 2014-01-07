@@ -12,7 +12,7 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-*/
+ */
 package io.teknek.collector;
 
 import io.teknek.model.ITuple;
@@ -24,33 +24,52 @@ import org.apache.log4j.Logger;
 
 import com.google.common.annotations.VisibleForTesting;
 
+/**
+ * Threaded component responsible for pulling tupple from collector and forwarding it to eachc child
+ * operator
+ * 
+ * @author edward
+ * 
+ */
 public class CollectorProcessor implements Runnable {
   final static Logger logger = Logger.getLogger(CollectorProcessor.class.getName());
-  Collector collector;
-  List<Operator> children;
-  boolean goOn = true;
+
+  private Collector collector;
+
+  private List<Operator> children;
+
+  private boolean goOn = true;
+
   private int tupleRetry;
-  
+
   public CollectorProcessor() {
     children = new ArrayList<Operator>();
     collector = new Collector();
   }
-  
-  public void run(){
-    while(goOn){
+
+  /**
+   * Take tuple from the collector (blocking) call handleTuple
+   */
+  public void run() {
+    while (goOn) {
       try {
         ITuple tuple = collector.take();
         handleTupple(tuple);
       } catch (InterruptedException e) {
-        if (logger.isDebugEnabled()){
+        if (logger.isDebugEnabled()) {
           logger.debug("While fetching tuple", e);
         }
-        //TODO should likely throw here for termination
+        // TODO should likely throw here for termination
       }
     }
   }
 
   @VisibleForTesting
+  /**
+   * For each child operator, attempt up to tupleRetry times to call operator.handleTuple(). If the framework tries 
+   * tuple retry times unsuccessfully discard the tuple
+   * @param tuple
+   */
   public void handleTupple(ITuple tuple) {
     if (children.size() == 0) {
       if (logger.isDebugEnabled()) {
@@ -70,7 +89,7 @@ public class CollectorProcessor implements Runnable {
       }
     }
   }
-  
+
   public Collector getCollector() {
     return collector;
   }
@@ -94,5 +113,5 @@ public class CollectorProcessor implements Runnable {
   public void setTupleRetry(int tupleRetry) {
     this.tupleRetry = tupleRetry;
   }
-  
+
 }
