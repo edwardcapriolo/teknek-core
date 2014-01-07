@@ -95,8 +95,15 @@ public class DriverFactory {
       recurseOperatorAndDriverNode(childDesc, childNode);
     }
   }
-  
-  public static Operator buildOperator(OperatorDesc operatorDesc){
+
+  /**
+   * OperatorDesc can describe local reasources, URL, loaded resources and dynamic resources like
+   * groovy code. This method instantiates an Operator based on the OperatorDesc.
+   * 
+   * @param operatorDesc
+   * @return
+   */
+  public static Operator buildOperator(OperatorDesc operatorDesc) {
     Operator operator = null;
     if (operatorDesc.getSpec() == null || "java".equalsIgnoreCase(operatorDesc.getSpec())){
       try {

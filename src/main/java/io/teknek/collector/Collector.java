@@ -28,6 +28,7 @@ import java.util.concurrent.ArrayBlockingQueue;
  */
 public class Collector extends ICollector {
 
+  //TODO this needs to be made configurable via parameters
   public static final int DEFAULT_QUEUE_SIZE = 4000;
   private ArrayBlockingQueue<ITuple> collected;
 

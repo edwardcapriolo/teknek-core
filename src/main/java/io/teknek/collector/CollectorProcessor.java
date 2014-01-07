@@ -68,7 +68,7 @@ public class CollectorProcessor implements Runnable {
   @VisibleForTesting
   /**
    * For each child operator, attempt up to tupleRetry times to call operator.handleTuple(). If the framework tries 
-   * tuple retry times unsuccessfully discard the tuple
+   * tuple retry times unsuccessfully discard the tuple.
    * @param tuple
    */
   public void handleTupple(ITuple tuple) {
@@ -80,6 +80,7 @@ public class CollectorProcessor implements Runnable {
     for (Operator o : children) {
       int attemptCount = 0;
       boolean complete = false;
+      //TODO this should be an ||?
       while (attemptCount++ < tupleRetry + 1 && !complete) {
         try {
           o.handleTuple(tuple);
