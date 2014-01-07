@@ -45,11 +45,23 @@ import java.util.Map;
 
 import org.apache.log4j.Logger;
 
+/**
+ * Builds instances of Driver for a given plan.
+ * @author edward
+ *
+ */
 public class DriverFactory {
 
   public static final String ENCODING = "UTF-8";
   final static Logger logger = Logger.getLogger(DriverFactory.class.getName());
   
+  /**
+   * Given a FeedParition and Plan create a Driver that will consume from the feed partition
+   * and execute the plan.
+   * @param feedPartition
+   * @param plan
+   * @return an uninitialized Driver
+   */
   public static Driver createDriver(FeedPartition feedPartition, Plan plan){
     OperatorDesc desc = plan.getRootOperator();
     Operator oper = buildOperator(desc);
@@ -69,13 +81,8 @@ public class DriverFactory {
     CollectorProcessor cp = new CollectorProcessor();
     cp.setTupleRetry(plan.getTupleRetry());
     int offsetCommitInterval = plan.getOffsetCommitInterval();
-    if (offsetCommitInterval == 0){
-      offsetCommitInterval = 10;
-    }
     Driver driver = new Driver(feedPartition, oper, offsetStorage, cp, offsetCommitInterval);
-    DriverNode root = driver.getDriverNode();
-    
-    recurseOperatorAndDriverNode(desc, root);
+    recurseOperatorAndDriverNode(desc, driver.getDriverNode());
     return driver;
   }
   

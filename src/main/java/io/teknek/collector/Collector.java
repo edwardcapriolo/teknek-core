@@ -22,8 +22,8 @@ import java.util.concurrent.ArrayBlockingQueue;
 
  
 /**
- * Positioned between two operators. emit take and peek work
- * on an underlying blocking queue which should offers flow control.
+ * Positioned between two operators. The methods emit() take() and peek() work
+ * on an underlying blocking queue which provides flow control.
  *
  */
 public class Collector extends ICollector {

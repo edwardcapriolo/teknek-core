@@ -36,6 +36,7 @@ public class CollectorProcessor implements Runnable {
 
   private Collector collector;
 
+  //TODO benchmark this as an array
   private List<Operator> children;
 
   private boolean goOn = true;
@@ -59,7 +60,7 @@ public class CollectorProcessor implements Runnable {
         if (logger.isDebugEnabled()) {
           logger.debug("While fetching tuple", e);
         }
-        // TODO should likely throw here for termination
+        throw new RuntimeException(e);
       }
     }
   }
