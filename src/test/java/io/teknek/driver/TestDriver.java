@@ -23,6 +23,8 @@ import io.teknek.feed.FixedFeed;
 import io.teknek.model.ITuple;
 import io.teknek.model.Operator;
 import io.teknek.model.Tuple;
+import io.teknek.offsetstorage.Offset;
+import io.teknek.offsetstorage.OffsetStorage;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -44,6 +46,27 @@ public class TestDriver {
     FixedFeed pf = new FixedFeed(prop);
     List<FeedPartition> parts = pf.getFeedPartitions();
     return parts.get(0);
+  }
+  
+  @Test
+  public void testOffsetCommit0(){
+   
+    OffsetStorage fake = new OffsetStorage(null, null, null){
+
+      public void persistOffset(Offset o) {
+      }
+
+      public Offset getCurrentOffset() {
+        return null;
+      }
+
+      public Offset findLatestPersistedOffset() {
+        return null;
+      }
+      
+    };
+    Driver root = new Driver(getPart(), new Minus1Operator(), fake, new CollectorProcessor(), 0);
+    root.maybeDoOffset();
   }
   
   @Test

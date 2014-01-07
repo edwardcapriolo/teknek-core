@@ -41,6 +41,9 @@ public class Driver implements Runnable {
   private AtomicBoolean goOn;
   private long tuplesSeen;
   private OffsetStorage offsetStorage;
+  /**
+   * after how many tuples should the offset be committed. 0 disables offsetCommits
+   */
   private int offsetCommitInterval;
   private ExecutorService feedExecutor;
   
@@ -123,7 +126,7 @@ public class Driver implements Runnable {
    */
   public void maybeDoOffset(){
     long seen = tuplesSeen;
-    if (seen % offsetCommitInterval == 0 && offsetStorage != null && fp.supportsOffsetManagement()){
+    if (offsetCommitInterval > 0 && seen % offsetCommitInterval == 0 && offsetStorage != null && fp.supportsOffsetManagement()){
         drainTopology();
         Offset offset = offsetStorage.getCurrentOffset(); 
         offsetStorage.persistOffset(offset);
