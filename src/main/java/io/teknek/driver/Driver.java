@@ -45,7 +45,6 @@ public class Driver implements Runnable {
    * after how many tuples should the offset be committed. 0 disables offsetCommits
    */
   private int offsetCommitInterval;
-  private ExecutorService feedExecutor;
   
   /**
    * 
@@ -65,7 +64,6 @@ public class Driver implements Runnable {
   public void initialize(){
     driverNode.initialize();
     fp.initialize();
-    feedExecutor = Executors.newSingleThreadExecutor();
   }
   
   public void run(){
@@ -91,11 +89,8 @@ public class Driver implements Runnable {
         break;
       }
     } while (goOn.get());
-    feedExecutor.shutdown();
   }
   
-  
-
   /**
    * To do offset storage we let the topology drain itself out. Then we commit. 
    */
