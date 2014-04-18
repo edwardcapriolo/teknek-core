@@ -69,38 +69,13 @@ public class Driver implements Runnable {
   }
   
   public void run(){
-    boolean getInFuture = false;
     boolean hasNext = false;
     do {
       if (!this.getGoOn()){
         break;
       }
-      final ITuple t = new Tuple();
-      if (getInFuture) {
-        /*
-         * This code is in place because if driver is blocking on next() the driver will not be aware
-         * it has been asked to shut down. Maybe this could would not be needed to something should
-         * be interupted.
-         */
-        Callable<Boolean> c = new Callable<Boolean>(){
-          @Override
-          public Boolean call() throws Exception {
-            return fp.next(t);
-          }
-        };
-        Future<Boolean> f = feedExecutor.submit(c);
-        try {
-          //TODO this timeout could be problematic in slow feeds...
-          //maybe better for give this a long wait and check the goOnStatus periodically
-          //using future.isDone(), but that is a spinlock
-          hasNext = f.get(1000, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException | ExecutionException | TimeoutException e1) {
-          //f.cancel(mayInterruptIfRunning) ??
-          continue;
-        }
-      } else {
-        hasNext = fp.next(t);
-      }
+      ITuple t = new Tuple();
+      hasNext = fp.next(t);
       tuplesSeen++;
       boolean complete = false;
       int attempts = 0;
@@ -142,7 +117,7 @@ public class Driver implements Runnable {
   }
   
   public void drainTopology(){
-    DriverNode root = this.driverNode;
+    DriverNode root = driverNode;
     drainTopologyInternal(root);
   }
   
@@ -153,6 +128,7 @@ public class Driver implements Runnable {
       } catch (InterruptedException e) {
       }
     }
+    node.getOperator().commit();
     for (DriverNode child: node.getChildren()){
       drainTopologyInternal(child);
     }
