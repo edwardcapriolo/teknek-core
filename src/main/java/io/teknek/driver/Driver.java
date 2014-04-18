@@ -26,6 +26,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.google.common.annotations.VisibleForTesting;
+
 import io.teknek.collector.CollectorProcessor;
 import io.teknek.feed.FeedPartition;
 import io.teknek.model.ITuple;
@@ -97,10 +99,15 @@ public class Driver implements Runnable {
   public void maybeDoOffset(){
     long seen = tuplesSeen;
     if (offsetCommitInterval > 0 && seen % offsetCommitInterval == 0 && offsetStorage != null && fp.supportsOffsetManagement()){
-        drainTopology();
-        Offset offset = offsetStorage.getCurrentOffset(); 
-        offsetStorage.persistOffset(offset);
+      doOffsetInternal();
     }
+  }
+  
+  @VisibleForTesting
+  void doOffsetInternal(){
+    drainTopology();
+    Offset offset = offsetStorage.getCurrentOffset(); 
+    offsetStorage.persistOffset(offset);
   }
   
   public DriverNode getDriverNode() {
@@ -113,7 +120,7 @@ public class Driver implements Runnable {
   
   public void drainTopology(){
     DriverNode root = driverNode;
-    drainTopologyInternal(root);
+    drainTopologyInternal(root); 
   }
   
   private void drainTopologyInternal(DriverNode node){
