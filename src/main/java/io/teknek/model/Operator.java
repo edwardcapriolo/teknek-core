@@ -58,6 +58,15 @@ public abstract class Operator {
   public abstract void handleTuple(ITuple tuple);
 
   /**
+   * If this operator batches or buffers some data initiate a blocking flush of that data in a 
+   * blocking fashion
+   * 
+   */
+  public void commit(){
+    
+  }
+  
+  /**
    * Called by the framework and supplied with a collector that will forward tuples on to child operators
    * @param collector
    */

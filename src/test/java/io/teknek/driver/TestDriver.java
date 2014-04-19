@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -50,27 +51,34 @@ public class TestDriver {
   
   @Test
   public void testOffsetCommit0(){
-   
+    final AtomicReference<Boolean> commit = new AtomicReference<Boolean>(false);
     OffsetStorage fake = new OffsetStorage(null, null, null){
-
       public void persistOffset(Offset o) {
+        commit.set(true);
       }
-
       public Offset getCurrentOffset() {
         return null;
       }
-
       public Offset findLatestPersistedOffset() {
         return null;
       }
-      
     };
-    Driver root = new Driver(getPart(), new Minus1Operator(), fake, new CollectorProcessor(), 0);
-    root.maybeDoOffset();
+    final AtomicReference<Boolean> commitOp = new AtomicReference<Boolean>(false);
+    Operator fakeOp = new Operator(){
+      public void handleTuple(ITuple tuple) { }
+      public void commit(){
+        commitOp.set(true);
+      }
+    };
+    Driver root = new Driver(getPart(), fakeOp, fake, new CollectorProcessor(), 0);
+    root.doOffsetInternal();
+    Assert.assertTrue(commit.get());
+    Assert.assertTrue(commitOp.get());
   }
   
   @Test
   public void aTest() throws InterruptedException {
+    
     Driver root = new Driver(getPart(), new Minus1Operator(), null, new CollectorProcessor(), 10);
     root.initialize();
     DriverNode child = new DriverNode(new Times2Operator(), new CollectorProcessor());
