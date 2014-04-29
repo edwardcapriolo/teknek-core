@@ -132,6 +132,26 @@ public class TeknekDaemon implements Watcher{
     }
   }
   
+  /**
+   * Determines if the plan can be run. IE not disabled and not
+   * malformed
+   * @return true if the plan seems reasonable enough to run
+   */
+  public boolean isPlanSane(Plan plan){
+    if (plan == null){
+      logger.error("did not find plan");
+      return false;
+    }
+    if (plan.isDisabled()){
+      logger.debug("disabled "+ plan.getName());
+      return false;
+    }
+    if (plan.getFeedDesc() == null){
+      logger.debug("feed was null "+ plan.getName());
+      return false;
+    }
+    return true;
+  }
   
   private void considerStarting(String child){
     Plan plan = null;
@@ -141,12 +161,7 @@ public class TeknekDaemon implements Watcher{
       logger.error(e);
       return;
     }
-    if (plan == null){
-      logger.error("did not find plan");
-      return;
-    }
-    if (plan.isDisabled()){
-      logger.debug("disabled "+ plan.getName());
+    if (!isPlanSane(plan)){
       return;
     }
     logger.debug("trying to acqure lock on " + WorkerDao.LOCKS_ZK + "/"+ plan.getName());
@@ -186,6 +201,7 @@ public class TeknekDaemon implements Watcher{
           plan = WorkerDao.findPlanByName(zk, child);
         } catch (WorkerDaoException e) {
           logger.error(e);
+          return;
         }
         if (plan.isDisabled()){
           logger.debug("disabled "+ plan.getName());
@@ -196,14 +212,19 @@ public class TeknekDaemon implements Watcher{
                     + plan.getMaxWorkers() + " running:" + children);
           } else {
             logger.debug("starting worker");
-            Worker worker = new Worker(plan, children, this);
-            worker.init();
-            worker.start();
-            addWorkerToList(plan, worker);
+            try {
+              Worker worker = new Worker(plan, children, this);
+              worker.init();
+              worker.start();
+              addWorkerToList(plan, worker);
+            } catch (RuntimeException e){
+              throw new WorkerStartException(e);
+            }
+            
           }
         }
       }
-    } catch (KeeperException | InterruptedException | WorkerDaoException e) {
+    } catch (KeeperException | InterruptedException | WorkerDaoException | WorkerStartException e) {
       logger.warn("getting lock", e); 
     } finally {
       try {
