@@ -16,14 +16,16 @@ limitations under the License.
 package io.teknek.daemon;
 
 import io.teknek.daemon.TeknekDaemon;
+import io.teknek.plan.FeedDesc;
+import io.teknek.plan.Plan;
 import io.teknek.zookeeper.EmbeddedZooKeeperServer;
 
 import java.util.Properties;
 
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
 
 public class TestTeknekDaemon extends EmbeddedZooKeeperServer {
 
@@ -35,6 +37,16 @@ public class TestTeknekDaemon extends EmbeddedZooKeeperServer {
     props.put(TeknekDaemon.ZK_SERVER_LIST, zookeeperTestServer.getConnectString());
     td = new TeknekDaemon(props);
     td.init();
+  }
+  
+  @Test 
+  public void testAcceptablePlans(){
+    Assert.assertFalse(td.isPlanSane(null));
+    Assert.assertFalse(td.isPlanSane(new Plan()));
+    Plan plan = new Plan().withFeedDesc(new FeedDesc());
+    Assert.assertTrue(td.isPlanSane(plan));
+    plan.setDisabled(false);
+    Assert.assertTrue(td.isPlanSane(plan));
   }
   
   @Test

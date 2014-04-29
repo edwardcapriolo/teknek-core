@@ -139,7 +139,7 @@ public class Driver implements Runnable {
   public String toString(){
     StringBuilder sb  = new StringBuilder();
     sb.append("Feed Partition " + fp.getPartitionId() + " ");
-    sb.append("driver node " + this.driverNode.toString());
+    sb.append("driver node " + this.driverNode.getClass().getName());
     return sb.toString();
   }
   

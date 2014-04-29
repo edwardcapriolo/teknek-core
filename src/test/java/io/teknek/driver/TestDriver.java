@@ -74,6 +74,8 @@ public class TestDriver {
     root.doOffsetInternal();
     Assert.assertTrue(commit.get());
     Assert.assertTrue(commitOp.get());
+    root.prettyPrint();
+    Assert.assertEquals("Feed Partition 0 driver node io.teknek.driver.DriverNode", root.toString());
   }
   
   @Test
