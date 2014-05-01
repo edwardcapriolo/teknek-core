@@ -67,6 +67,13 @@ public abstract class Operator {
   }
   
   /**
+   * Close any resources associated with operator for shutdown 
+   */
+  public void close(){
+    
+  }
+  
+  /**
    * Called by the framework and supplied with a collector that will forward tuples on to child operators
    * @param collector
    */

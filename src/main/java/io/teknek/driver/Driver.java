@@ -91,8 +91,16 @@ public class Driver implements Runnable {
         break;
       }
     } while (goOn.get());
+    gracefulEnd();
   }
   
+  private void gracefulEnd(){
+    fp.close();
+    if (offsetStorage != null && fp.supportsOffsetManagement()){
+      doOffsetInternal();
+    }
+    closeTopology();
+  }
   /**
    * To do offset storage we let the topology drain itself out. Then we commit. 
    */
@@ -135,6 +143,20 @@ public class Driver implements Runnable {
       drainTopologyInternal(child);
     }
   }
+  
+  public void closeTopology(){
+    DriverNode root = driverNode;
+    closeTopologyInternal(root);
+  }
+  
+  
+  private void closeTopologyInternal(DriverNode node){
+    node.getOperator().close();
+    for (DriverNode child: node.getChildren()){
+      closeTopologyInternal(child);
+    }
+  }
+  
   
   public String toString(){
     StringBuilder sb  = new StringBuilder();

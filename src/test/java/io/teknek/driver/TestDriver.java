@@ -99,6 +99,17 @@ public class TestDriver {
     assertExpectedPairs(child, expected);
     
   }
+  
+  @Test
+  public void closeTest() throws InterruptedException {
+    Driver root = new Driver(getPart(), new CloseDetectOperator(), null, new CollectorProcessor(), 10);
+    root.initialize();
+    Thread t = new Thread(root);
+    t.start();
+    root.setGoOn(false);
+    t.join(4000);
+    Assert.assertEquals(true, CloseDetectOperator.CLOSED); 
+  }
 
   public static void assertExpectedPairs(DriverNode finalNode, List<Tuple> expected) throws InterruptedException {
     for (int i = 0; i < expected.size(); i++) {
