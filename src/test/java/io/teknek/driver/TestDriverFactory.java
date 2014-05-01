@@ -17,24 +17,28 @@ package io.teknek.driver;
 
 import java.io.File;
 import java.net.MalformedURLException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import io.teknek.collector.Collector;
 import io.teknek.feed.Feed;
 import io.teknek.feed.FeedPartition;
+import io.teknek.feed.FixedFeed;
 
 import io.teknek.feed.TestFixedFeed;
 import io.teknek.model.ITuple;
 import io.teknek.model.Operator;
 import io.teknek.model.Tuple;
 import io.teknek.plan.FeedDesc;
+import io.teknek.plan.OffsetStorageDesc;
 import io.teknek.plan.OperatorDesc;
 import io.teknek.plan.Plan;
 import io.teknek.plan.TestPlan;
 import io.teknek.util.MapBuilder;
 
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class TestDriverFactory {
@@ -45,6 +49,34 @@ public class TestDriverFactory {
     p.getRootOperator().setParameters(MapBuilder.makeMap("a", "A", "b", 1));
     Driver driver = DriverFactory.createDriver(TestDriver.getPart(), p);
     Assert.assertEquals("A", driver.getDriverNode().getOperator().getProperties().get("a"));
+  }
+  
+  
+  public static Plan getPlanWithOffsetStorage(){
+    Plan p = new Plan()
+    .withFeedDesc(
+            new FeedDesc().withFeedClass(FixedFeed.class.getName()).withProperties(
+                    MapBuilder.makeMap(FixedFeed.NUMBER_OF_PARTITIONS, 2, FixedFeed.NUMBER_OF_ROWS,
+                            10))).withRootOperator(
+            new OperatorDesc(new Minus1Operator()).withNextOperator(new OperatorDesc(
+                    new Times2Operator())));
+    p.setName("myplan");
+    p.setOffsetStorageDesc( new OffsetStorageDesc().withOperatorClass(ImMemoryOffsetStorage.class.getName()));
+    p.setOffsetCommitInterval(1);
+    return p;
+  }
+  
+  @Ignore
+  /* this tests adds coverage */
+  public void testOffsetPersistance() throws InterruptedException{
+    ImMemoryOffsetStorage i = new ImMemoryOffsetStorage(TestDriver.getPart(), getPlanWithOffsetStorage(), new HashMap<String,String>());
+    i.setValue("5");
+    Driver driver = DriverFactory.createDriver(TestDriver.getPart(), getPlanWithOffsetStorage());
+    
+    Thread t = new Thread(driver);
+    t.start();
+    t.join(1000000);
+    Assert.assertEquals("10", new String(i.getCurrentOffset().serialize()));
   }
   
   @Test
