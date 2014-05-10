@@ -54,5 +54,6 @@ public class TestPipeOperator {
     Thread.sleep(1);
     Tuple t = (Tuple) c.take();
     Assert.assertEquals("abc", t.getField("y"));
+    o.close();
   }
 }

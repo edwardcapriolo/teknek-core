@@ -34,7 +34,6 @@ public abstract class PipeOperator extends Operator {
     super.setProperties(properties);
     String [] commandAndArgs = (String []) properties.get(PIPE_OPERATOR_COMMAND);
     Runtime rt = Runtime.getRuntime();
-    final Process process;
     try {
       process = rt.exec(commandAndArgs);
     } catch (IOException e) {
