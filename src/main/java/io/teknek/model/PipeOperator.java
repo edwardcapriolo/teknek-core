@@ -10,6 +10,13 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * This operator opens a Pipe to a subprocess connecting the input and output streams.
+ * Child classes should interact with the pipe by writing to the outstream, flushing, 
+ * and then reading from the input stream. See TestPipeOperator for an example. 
+ * @author edward
+ *
+ */
 public abstract class PipeOperator extends Operator {
 
   public static final String PIPE_OPERATOR_COMMAND = "pipe.operator.command.and.arguments";
