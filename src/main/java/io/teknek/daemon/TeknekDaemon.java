@@ -275,5 +275,11 @@ public class TeknekDaemon implements Watcher{
   public void setRescanMillis(long rescanMillis) {
     this.rescanMillis = rescanMillis;
   }
-  
+
+  public static void main (String [] args){
+    TeknekDaemon td;
+    Properties props = System.getProperties();
+    td = new TeknekDaemon(props);
+    td.init();
+  }  
 }
