@@ -205,24 +205,23 @@ public class TeknekDaemon implements Watcher{
         }
         if (plan.isDisabled()){
           logger.debug("disabled "+ plan.getName());
-        } else {
-          List<String> children = WorkerDao.findWorkersWorkingOnPlan(zk, plan);
-          if (children.size() >= plan.getMaxWorkers()) {
-            logger.debug("already running max children:" + children.size() + " planmax:"
-                    + plan.getMaxWorkers() + " running:" + children);
-          } else {
-            logger.debug("starting worker");
-            try {
-              Worker worker = new Worker(plan, children, this);
-              worker.init();
-              worker.start();
-              addWorkerToList(plan, worker);
-            } catch (RuntimeException e){
-              throw new WorkerStartException(e);
-            }
-            
-          }
-        }
+          return;
+        } 
+        List<String> children = WorkerDao.findWorkersWorkingOnPlan(zk, plan);
+        if (children.size() >= plan.getMaxWorkers()) {
+          logger.debug("already running max children:" + children.size() + " planmax:"
+                  + plan.getMaxWorkers() + " running:" + children);
+          return;
+        } 
+        logger.debug("starting worker");
+        try {
+          Worker worker = new Worker(plan, children, this);
+          worker.init();
+          worker.start();
+          addWorkerToList(plan, worker);
+        } catch (RuntimeException e){
+          throw new WorkerStartException(e);
+        }    
       }
     } catch (KeeperException | InterruptedException | WorkerDaoException | WorkerStartException e) {
       logger.warn("getting lock", e); 
