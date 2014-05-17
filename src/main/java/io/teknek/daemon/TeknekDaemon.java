@@ -152,18 +152,46 @@ public class TeknekDaemon implements Watcher{
     }
     return true;
   }
+
+  @VisibleForTesting
+  boolean alreadyAtMaxWorkersPerNode(Plan plan, List<String> workerUuids, List<Worker> workingOnPlan){
+    if (plan.getMaxWorkersPerNode() == 0){
+      return false;
+    }
+    int numberOfWorkersRunningInDaemon = 0;
+    if (workingOnPlan == null){
+      return false;
+    }
+    for (Worker worker: workingOnPlan){
+      for (String uuid : workerUuids ) {
+        if (worker.getMyId().toString().equals(uuid)){
+          numberOfWorkersRunningInDaemon++;
+        }
+      }
+    }
+    if (numberOfWorkersRunningInDaemon >= plan.getMaxWorkersPerNode()){
+      return true;
+    } else {
+      return false;
+    }
+  }
   
   private void considerStarting(String child){
     Plan plan = null;
+    List<String> workerUuidsWorkingOnPlan = null;
     try {
       plan = WorkerDao.findPlanByName(zk, child);
+      workerUuidsWorkingOnPlan = WorkerDao.findWorkersWorkingOnPlan(zk, plan);
     } catch (WorkerDaoException e) {
       logger.error(e);
       return;
     }
-    if (!isPlanSane(plan)){
+    if (alreadyAtMaxWorkersPerNode(plan, workerUuidsWorkingOnPlan, workerThreads.get(plan))){
       return;
     }
+    if (!isPlanSane(plan)){
+      return;
+    } 
     logger.debug("trying to acqure lock on " + WorkerDao.LOCKS_ZK + "/"+ plan.getName());
     try {
       WorkerDao.maybeCreatePlanLockDir(zk, plan);
@@ -196,7 +224,7 @@ public class TeknekDaemon implements Watcher{
       }*/
       boolean hasLatch = c.await(3000, TimeUnit.MILLISECONDS);
       if (hasLatch){
-        /* plan could have been disabled after latch */
+        /* plan could have been disabled after latch:Maybe editin the plan should lock it as well */
         try {
           plan = WorkerDao.findPlanByName(zk, child);
         } catch (WorkerDaoException e) {
@@ -207,15 +235,15 @@ public class TeknekDaemon implements Watcher{
           logger.debug("disabled "+ plan.getName());
           return;
         } 
-        List<String> children = WorkerDao.findWorkersWorkingOnPlan(zk, plan);
-        if (children.size() >= plan.getMaxWorkers()) {
-          logger.debug("already running max children:" + children.size() + " planmax:"
-                  + plan.getMaxWorkers() + " running:" + children);
+        List<String> workerUuids = WorkerDao.findWorkersWorkingOnPlan(zk, plan);
+        if (workerUuids.size() >= plan.getMaxWorkers()) {
+          logger.debug("already running max children:" + workerUuids.size() + " planmax:"
+                  + plan.getMaxWorkers() + " running:" + workerUuids);
           return;
         } 
         logger.debug("starting worker");
         try {
-          Worker worker = new Worker(plan, children, this);
+          Worker worker = new Worker(plan, workerUuids, this);
           worker.init();
           worker.start();
           addWorkerToList(plan, worker);

@@ -23,6 +23,8 @@ import io.teknek.plan.Plan;
 import io.teknek.util.MapBuilder;
 import io.teknek.zookeeper.EmbeddedZooKeeperServer;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Properties;
 
 import org.junit.AfterClass;
@@ -41,6 +43,19 @@ public class TestTeknekDaemon extends EmbeddedZooKeeperServer {
     props.put(TeknekDaemon.ZK_SERVER_LIST, zookeeperTestServer.getConnectString());
     td = new TeknekDaemon(props);
     td.init();
+  }
+   
+  @Test
+  public void maxWorkerTest(){
+    Plan aPlan = new Plan().withMaxWorkersPerNode(0).withMaxWorkers(2);
+    Worker workingOn1 = new Worker(aPlan, null, null);
+    Worker workingOn2 = new Worker(aPlan, null, null);
+    List<String> workerIds = Arrays.asList(workingOn1.getMyId().toString(), workingOn2.getMyId().toString());
+    List<Worker> localWorkers = Arrays.asList(workingOn1,workingOn2);
+    Assert.assertFalse(td.alreadyAtMaxWorkersPerNode(aPlan, workerIds, localWorkers));
+    aPlan.setMaxWorkersPerNode(2);
+    Assert.assertTrue(td.alreadyAtMaxWorkersPerNode(aPlan, workerIds, localWorkers));
+    Assert.assertFalse(td.alreadyAtMaxWorkersPerNode(aPlan, workerIds, null));
   }
   
   @Test 

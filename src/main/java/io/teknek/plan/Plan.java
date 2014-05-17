@@ -10,6 +10,7 @@ public class Plan {
   private int maxWorkers;
   private int tupleRetry;
   private int offsetCommitInterval;
+  private int maxWorkersPerNode;
  
   public Plan(){
   }
@@ -61,6 +62,11 @@ public class Plan {
   public void setMaxWorkers(int maxWorkers) {
     this.maxWorkers = maxWorkers;
   }
+  
+  public Plan withMaxWorkers(int maxWorkers) {
+    setMaxWorkers(maxWorkers);
+    return this;
+  }
 
   public OffsetStorageDesc getOffsetStorageDesc() {
     return offsetStorageDesc;
@@ -101,6 +107,20 @@ public class Plan {
     this.offsetCommitInterval = offsetCommitInterval;
     return this;
   }
+  
+  public int getMaxWorkersPerNode() {
+    return maxWorkersPerNode;
+  }
+
+  public void setMaxWorkersPerNode(int maxWorkersPerNode) {
+    this.maxWorkersPerNode = maxWorkersPerNode;
+  }
+  
+  public Plan withMaxWorkersPerNode(int maxWorkersPerNode) {
+    setMaxWorkersPerNode(maxWorkersPerNode);
+    return this;
+  }
+  
   @Override
   public int hashCode() {
     final int prime = 31;
