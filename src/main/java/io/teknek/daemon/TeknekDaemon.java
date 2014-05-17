@@ -196,7 +196,7 @@ public class TeknekDaemon implements Watcher{
       }*/
       boolean hasLatch = c.await(3000, TimeUnit.MILLISECONDS);
       if (hasLatch){
-        /* plan could have been disabled after latch */
+        /* plan could have been disabled after latch:Maybe editin the plan should lock it as well */
         try {
           plan = WorkerDao.findPlanByName(zk, child);
         } catch (WorkerDaoException e) {
