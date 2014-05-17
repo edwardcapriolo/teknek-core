@@ -16,8 +16,11 @@ limitations under the License.
 package io.teknek.daemon;
 
 import io.teknek.daemon.TeknekDaemon;
+import io.teknek.feed.FixedFeed;
 import io.teknek.plan.FeedDesc;
+import io.teknek.plan.OperatorDesc;
 import io.teknek.plan.Plan;
+import io.teknek.util.MapBuilder;
 import io.teknek.zookeeper.EmbeddedZooKeeperServer;
 
 import java.util.Properties;
@@ -30,6 +33,7 @@ import org.junit.Test;
 public class TestTeknekDaemon extends EmbeddedZooKeeperServer {
 
   static TeknekDaemon td = null;
+  static Plan p;
   
   @BeforeClass
   public static void setup(){
@@ -50,17 +54,23 @@ public class TestTeknekDaemon extends EmbeddedZooKeeperServer {
   }
   
   @Test
-  public void hangAround(){
-    try {
-      Thread.sleep(5000);
-    } catch (InterruptedException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    }
+  public void testBadConfig() throws InterruptedException{
+    p = new Plan().withFeedDesc(
+            new FeedDesc().withFeedClass(FixedFeed.class.getName()).withProperties(
+                    MapBuilder.makeMap(FixedFeed.NUMBER_OF_PARTITIONS, 2, FixedFeed.NUMBER_OF_ROWS,
+                            10))).withRootOperator(new OperatorDesc(new BeLoudOperator()));
+    p.setName("tooManyWorkers");
+    p.setMaxWorkers(3);
+    td.applyPlan(p);
+    Thread.sleep(5000);
   }
   
   @AfterClass
-  public static void shutdown(){
+  public static void shutdown() throws InterruptedException{
+    p.setDisabled(true);
+    td.applyPlan(p);
+    Thread.sleep(1000);
+    td.deletePlan(p);
     td.stop();
   }
   

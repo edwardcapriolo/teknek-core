@@ -359,6 +359,12 @@ public class WorkerDao {
     }
   }
   
+  /**
+   * Note you should call stop the plan if it is running before deleting 
+   * @param zk
+   * @param p
+   * @throws WorkerDaoException
+   */
   public static void deletePlan(ZooKeeper zk, Plan p) throws WorkerDaoException {
     String planNode = PLANS_ZK + "/" + p.getName();
     try {

@@ -71,6 +71,9 @@ public class Worker implements Watcher {
     } catch (WorkerDaoException e1) {
       throw new RuntimeException(e1);
     }
+    if (workerStatus.size() >= feed.getFeedPartitions().size()){
+      throw new RuntimeException("Number of running workers " + workerStatus.size()+" >= feed partitions " + feed.getFeedPartitions().size() +" plan should be fixed " +plan.getName());
+    }
     FeedPartition toProcess = findPartitionToProcess(workerStatus, feed.getFeedPartitions());
     if (toProcess != null){
       driver = DriverFactory.createDriver(toProcess, plan);
@@ -78,7 +81,6 @@ public class Worker implements Watcher {
       WorkerStatus iGotThis = new WorkerStatus(myId.toString(), toProcess.getPartitionId());
       try {
         WorkerDao.registerWorkerStatus(zk, plan, iGotThis);
-        
       } catch (WorkerDaoException e) {
         throw new RuntimeException(e);
       }
@@ -149,9 +151,6 @@ public class Worker implements Watcher {
     if (event.getType() == EventType.NodeDataChanged || event.getType() == EventType.NodeDeleted) {
       driver.setGoOn(false);
       shutdown();
-      //wait for graceful termination
-      //close zk
-      //remove this class from parent list
     }
   }
 
