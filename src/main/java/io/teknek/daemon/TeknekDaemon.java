@@ -20,6 +20,8 @@ import io.teknek.datalayer.WorkerDaoException;
 import io.teknek.plan.Plan;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -41,30 +43,41 @@ import com.google.common.annotations.VisibleForTesting;
 
 public class TeknekDaemon implements Watcher{
 
+  private final static Logger logger = Logger.getLogger(TeknekDaemon.class.getName());
   public static final String ZK_SERVER_LIST = "teknek.zk.servers";
   public static final String MAX_WORKERS = "teknek.max.workers";
-  final static Logger logger = Logger.getLogger(TeknekDaemon.class.getName());
+  public static final String DAEMON_ID = "teknek.daemon.id";
+  
   private int maxWorkers = 4;
-  private UUID myId;
+  private String myId;
   private Properties properties;
   private ZooKeeper zk;
   private long rescanMillis = 5000;
   ConcurrentHashMap<Plan, List<Worker>> workerThreads;
   private boolean goOn = true;
+  private String hostname;
   
   public TeknekDaemon(Properties properties){
-    
-    myId = UUID.randomUUID();
     this.properties = properties;
+    if (properties.containsKey(DAEMON_ID)){
+      myId = properties.getProperty(DAEMON_ID);
+    } else {
+      myId = UUID.randomUUID().toString();
+    }
     workerThreads = new ConcurrentHashMap<Plan,List<Worker>>();
     if (properties.containsKey(MAX_WORKERS)){
       maxWorkers = Integer.parseInt(properties.getProperty(MAX_WORKERS));
+    }
+    try {
+      setHostname(InetAddress.getLocalHost().getHostName());
+    } catch (UnknownHostException ex) {
+      setHostname("unknown");
     }
   }
   
   public void init() {
     logger.debug("my UUID" + myId);
-    System.out.println("connecting to "+properties.getProperty(ZK_SERVER_LIST));
+    logger.info("connecting to " + properties.getProperty(ZK_SERVER_LIST));
     try {
       zk = new ZooKeeper(properties.getProperty(ZK_SERVER_LIST), 100, this);
       try {
@@ -251,11 +264,11 @@ public class TeknekDaemon implements Watcher{
     // TODO Auto-generated method stub    
   }
 
-  public UUID getMyId() {
+  public String getMyId() {
     return myId;
   }
 
-  public void setMyId(UUID myId) {
+  public void setMyId(String myId) {
     this.myId = myId;
   }
  
@@ -274,11 +287,18 @@ public class TeknekDaemon implements Watcher{
   public void setRescanMillis(long rescanMillis) {
     this.rescanMillis = rescanMillis;
   }
+  
+  public String getHostname() {
+    return hostname;
+  }
+
+  @VisibleForTesting
+  void setHostname(String hostname) {
+    this.hostname = hostname;
+  }
 
   public static void main (String [] args){
-    TeknekDaemon td;
-    Properties props = System.getProperties();
-    td = new TeknekDaemon(props);
+    TeknekDaemon td = new TeknekDaemon(System.getProperties());
     td.init();
   }  
 }

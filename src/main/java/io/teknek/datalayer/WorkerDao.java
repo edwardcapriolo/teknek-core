@@ -22,11 +22,9 @@ import io.teknek.plan.FeedDesc;
 import io.teknek.plan.OperatorDesc;
 import io.teknek.plan.Plan;
 
-import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLConnection;
@@ -51,9 +49,12 @@ import org.codehaus.jackson.map.ObjectMapper;
  */
 public class WorkerDao {
   
-  final static Logger logger = Logger.getLogger(WorkerDao.class.getName());
+  public final static String ENCODING = "UTF-8";
   
-  final static String ENCODING = "UTF-8";
+  private static final ObjectMapper MAPPER = new ObjectMapper();
+  
+  private final static Logger logger = Logger.getLogger(WorkerDao.class.getName());
+  
   /**
    * Base directory of the entire application
    */
@@ -152,16 +153,13 @@ public class WorkerDao {
   
   public static Plan deserializePlan(byte[] b) throws JsonParseException, JsonMappingException,
           IOException {
-    ObjectMapper om = new ObjectMapper();
-    Plan p1 = om.readValue(b, Plan.class);
-    return p1;
+    return MAPPER.readValue(b, Plan.class);
   }
   
   public static byte[] serializePlan(Plan plan) throws WorkerDaoException {
-    ObjectMapper map = new ObjectMapper();
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     try {
-      map.writeValue(baos, plan);
+      MAPPER.writeValue(baos, plan);
     } catch (IOException ex) {
       throw new WorkerDaoException(ex);
     }
@@ -190,14 +188,14 @@ public class WorkerDao {
   }
   
   /**
-   * Creates an epehemeral node so that we can determine how many current live nodes there are
+   * Creates an ephemeral node so that we can determine how many current live nodes there are
    * @param zk
    * @param d
    * @throws WorkerDaoException
    */
   public static void createEphemeralNodeForDaemon(ZooKeeper zk, TeknekDaemon d) throws WorkerDaoException {
     try {
-      zk.create(WORKERS_ZK + "/" + d.getMyId().toString(), new byte[0], Ids.OPEN_ACL_UNSAFE,
+      zk.create(WORKERS_ZK + "/" + d.getMyId() + "@" + d.getHostname(), new byte[0], Ids.OPEN_ACL_UNSAFE,
               CreateMode.EPHEMERAL);
     } catch (KeeperException | InterruptedException e) {
       throw new WorkerDaoException(e);
