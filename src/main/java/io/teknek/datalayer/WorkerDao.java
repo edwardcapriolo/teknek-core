@@ -41,7 +41,6 @@ import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 
-
 /**
  * This component deals with persistence into zk for the worker node
  * @author edward
@@ -219,8 +218,8 @@ public class WorkerDao {
       try {
         Stat stat = zk.exists(lookAtPath, false);
         byte[] data = zk.getData(lookAtPath, false, stat);
-        results.add(new WorkerStatus(worker, new String(data, ENCODING)));
-      } catch (KeeperException | InterruptedException | UnsupportedEncodingException e) {
+        results.add(MAPPER.readValue(data, WorkerStatus.class));
+      } catch (KeeperException | InterruptedException | IOException e) {
         throw new WorkerDaoException(e);
       }
     }
@@ -237,10 +236,10 @@ public class WorkerDao {
   public static void registerWorkerStatus(ZooKeeper zk, Plan plan, WorkerStatus s) throws WorkerDaoException{
     String writeToPath = PLANS_ZK + "/" + plan.getName() + "/" + s.getWorkerUuid();
     try {
-      zk.create(writeToPath, s.getFeedPartitionId().getBytes(ENCODING), Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
-      logger.debug("Registered as ephemeral "+ writeToPath);
+      zk.create(writeToPath, MAPPER.writeValueAsBytes(s), Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
+      logger.debug("Registered as ephemeral " + writeToPath);
       zk.exists(PLANS_ZK+ "/" + plan.getName(), true);
-    } catch (KeeperException | InterruptedException | UnsupportedEncodingException e) {
+    } catch (KeeperException | InterruptedException | IOException e) {
       throw new WorkerDaoException(e);
     }
   }

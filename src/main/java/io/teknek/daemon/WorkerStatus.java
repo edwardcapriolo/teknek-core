@@ -16,13 +16,25 @@ limitations under the License.
 package io.teknek.daemon;
 
 public class WorkerStatus {
+  
+  private String teknekDaemonId;
+  
   private String workerUuid;
 
   private String feedPartitionId;
 
-  public WorkerStatus(String workerUuid, String feedPartitionId) {
+  public WorkerStatus(String workerUuid, String feedPartitionId, String teknekDaemonId) {
     this.workerUuid = workerUuid;
     this.feedPartitionId = feedPartitionId;
+    this.teknekDaemonId = teknekDaemonId;
+  }
+
+  public String getTeknekDaemonId() {
+    return teknekDaemonId;
+  }
+
+  public void setTeknekDaemonId(String teknekDaemonId) {
+    this.teknekDaemonId = teknekDaemonId;
   }
 
   public String getWorkerUuid() {
@@ -40,5 +52,5 @@ public class WorkerStatus {
   public void setFeedPartitionId(String feedPartitionId) {
     this.feedPartitionId = feedPartitionId;
   }
-
+  
 }
