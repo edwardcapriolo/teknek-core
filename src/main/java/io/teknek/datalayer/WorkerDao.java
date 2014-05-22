@@ -195,9 +195,10 @@ public class WorkerDao {
    */
   public static void createEphemeralNodeForDaemon(ZooKeeper zk, TeknekDaemon d) throws WorkerDaoException {
     try {
-      zk.create(WORKERS_ZK + "/" + d.getMyId() + "@" + d.getHostname(), new byte[0], Ids.OPEN_ACL_UNSAFE,
+      byte [] hostbytes = d.getHostname().getBytes(ENCODING);
+      zk.create(WORKERS_ZK + "/" + d.getMyId(), hostbytes , Ids.OPEN_ACL_UNSAFE,
               CreateMode.EPHEMERAL);
-    } catch (KeeperException | InterruptedException e) {
+    } catch (KeeperException | InterruptedException | UnsupportedEncodingException e) {
       throw new WorkerDaoException(e);
     }
   }
