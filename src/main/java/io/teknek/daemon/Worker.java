@@ -77,8 +77,8 @@ public class Worker implements Watcher {
     FeedPartition toProcess = findPartitionToProcess(workerStatus, feed.getFeedPartitions());
     if (toProcess != null){
       driver = DriverFactory.createDriver(toProcess, plan);
-      driver.initialize();
-      WorkerStatus iGotThis = new WorkerStatus(myId.toString(), toProcess.getPartitionId());
+      driver.initialize(); 
+      WorkerStatus iGotThis = new WorkerStatus(myId.toString(), toProcess.getPartitionId() , parent.getMyId());
       try {
         WorkerDao.registerWorkerStatus(zk, plan, iGotThis);
       } catch (WorkerDaoException e) {

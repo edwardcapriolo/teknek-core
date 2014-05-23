@@ -3,15 +3,19 @@ package io.teknek.datalayer;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.zookeeper.ZooKeeper;
 import org.junit.Assert;
 import org.junit.Test;
 
+import io.teknek.daemon.WorkerStatus;
 import io.teknek.driver.TestDriverFactory;
 import io.teknek.plan.Bundle;
 import io.teknek.plan.FeedDesc;
 import io.teknek.plan.OperatorDesc;
+import io.teknek.plan.Plan;
 import io.teknek.zookeeper.DummyWatcher;
 import io.teknek.zookeeper.EmbeddedZooKeeperServer;
 
@@ -55,5 +59,21 @@ public class TestWorkerDao extends EmbeddedZooKeeperServer {
     FeedDesc fDesc = WorkerDao.loadSavedFeedDesc(zk, b.getPackageName(), "GTry");
     Assert.assertEquals("GTry", fDesc.getTheClass());
   }
-  
+ 
+  @Test
+  public void persistStatus() throws WorkerDaoException, IOException, InterruptedException{
+    DummyWatcher dw = new DummyWatcher();
+    ZooKeeper zk = new ZooKeeper(zookeeperTestServer.getConnectString(), 100, dw);
+    WorkerStatus ws = new WorkerStatus("1","2","3");
+    Plan p = new Plan().withName("persist");
+    WorkerDao.createZookeeperBase(zk);
+    WorkerDao.createOrUpdatePlan(p, zk);
+    WorkerDao.registerWorkerStatus(zk, p , ws);
+    List<WorkerStatus> statuses = WorkerDao.findAllWorkerStatusForPlan(zk, p, WorkerDao.findWorkersWorkingOnPlan(zk, p));
+    Assert.assertEquals(1, statuses.size());
+    Assert.assertEquals(ws.getTeknekDaemonId(), statuses.get(0).getTeknekDaemonId());
+    Assert.assertEquals(ws.getFeedPartitionId(), statuses.get(0).getFeedPartitionId());
+    Assert.assertEquals(ws.getWorkerUuid(), statuses.get(0).getWorkerUuid());
+    zk.close();
+  }
 }
