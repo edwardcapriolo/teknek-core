@@ -45,6 +45,11 @@ public class Plan {
   public void setName(String name) {
     this.name = name;
   }
+  
+  public Plan withName(String name) {
+    setName(name);
+    return this;
+  }
 
   public boolean isDisabled() {
     return disabled;

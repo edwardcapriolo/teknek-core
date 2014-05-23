@@ -23,6 +23,9 @@ public class WorkerStatus {
 
   private String feedPartitionId;
 
+  public WorkerStatus(){
+    
+  }
   public WorkerStatus(String workerUuid, String feedPartitionId, String teknekDaemonId) {
     this.workerUuid = workerUuid;
     this.feedPartitionId = feedPartitionId;
