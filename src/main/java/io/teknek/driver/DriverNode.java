@@ -21,17 +21,20 @@ import io.teknek.model.Operator;
 import java.util.ArrayList;
 import java.util.List;
 
-
+/*
+ * When a plan is build it consists of a series of connected DriverNode(s).
+ * DriverNodes are connected in a one-to-one, one-to-none, or one-to-many relationship 
+ */
 public class DriverNode {
 
   private Operator operator;
   private CollectorProcessor collectorProcessor;
-  private Thread thread ;
-  private List<DriverNode> children ;
+  private Thread thread;
+  private List<DriverNode> children;
   
   public DriverNode(Operator operator, CollectorProcessor cp){
-    this.operator = operator;
-    this.collectorProcessor = cp;
+    this.setOperator(operator);
+    this.setCollectorProcessor(cp);
     operator.setCollector(cp.getCollector());
     children = new ArrayList<DriverNode>();
   }
@@ -48,13 +51,13 @@ public class DriverNode {
   }
   
   /**
-   * Method adds ad child data node and bind the collect processor
+   * Method adds a child data node and binds the collect processor
    * of this node to the operator of the next node
-   * @param dn
+   * @param dn a child driver node
    */
   public void addChild(DriverNode dn){
     collectorProcessor.getChildren().add(dn.operator);
-    this.children.add(dn);
+    children.add(dn);
   }
   
   public DriverNode withChild(DriverNode dn){
@@ -91,12 +94,12 @@ public class DriverNode {
     return sb.toString();
   }
   
-  public void prettyPrint(int tabs){
-    for (int i =0 ; i< tabs;i++){
+  public void prettyPrint(int tabs) {
+    for (int i = 0; i < tabs; i++) {
       System.out.print("--");
     }
-    System.out.println(this.operator.getClass().getName());
-    for (DriverNode child : this.children){
+    System.out.println(operator.getClass().getName());
+    for (DriverNode child : children) {
       child.prettyPrint(tabs + 1);
     }
   }
