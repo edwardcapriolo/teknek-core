@@ -60,11 +60,6 @@ public class DriverNode {
     children.add(dn);
   }
   
-  public DriverNode withChild(DriverNode dn){
-    addChild(dn);
-    return this;
-  }
-
   public Operator getOperator() {
     return operator;
   }
