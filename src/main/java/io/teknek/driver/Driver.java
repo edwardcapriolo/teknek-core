@@ -15,17 +15,6 @@ limitations under the License.
 */
 package io.teknek.driver;
 
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.FutureTask;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
-
 import com.google.common.annotations.VisibleForTesting;
 
 import io.teknek.collector.CollectorProcessor;
@@ -40,7 +29,7 @@ import io.teknek.offsetstorage.OffsetStorage;
 public class Driver implements Runnable {
   private FeedPartition fp;
   private DriverNode driverNode;
-  private AtomicBoolean goOn;
+  private volatile boolean goOn;
   private long tuplesSeen;
   private OffsetStorage offsetStorage;
   /**
@@ -58,7 +47,7 @@ public class Driver implements Runnable {
     this.fp = fp;
     driverNode = new DriverNode(operator, collectorProcessor);
     this.offsetStorage = offsetStorage;
-    goOn = new AtomicBoolean(true);
+    goOn = true;
     tuplesSeen = 0;
     this.offsetCommitInterval = offsetCommitInterval;
   }
@@ -90,7 +79,7 @@ public class Driver implements Runnable {
       if (!hasNext) {
         break;
       }
-    } while (goOn.get());
+    } while (goOn);
     gracefulEnd();
   }
   
@@ -178,11 +167,11 @@ public class Driver implements Runnable {
   }
 
   public boolean getGoOn() {
-    return goOn.get();
+    return goOn;
   }
 
   public void setGoOn(boolean goOn) {
-    this.goOn.set(goOn);
+    this.goOn = goOn;
   }
   
 }
