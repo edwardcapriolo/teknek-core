@@ -99,6 +99,14 @@ public class DriverFactory {
     }
   }
   
+  /**
+   * DynamicInstantiatable has some pre-nit strings it uses as for spec
+   * that do not match nit-compiler. Here we correct these and return a new
+   * object
+   * 
+   * @param d
+   * @return the 
+   */
   private static NitDesc nitDescFromDynamic(DynamicInstantiatable d){
     NitDesc nd = new NitDesc();
     nd.setScript(d.getScript());
@@ -143,18 +151,15 @@ public class DriverFactory {
   
   public static OffsetStorage buildOffsetStorage(FeedPartition feedPartition, Plan plan, OffsetStorageDesc offsetDesc){
     OffsetStorage offsetStorage = null;
-    Class [] paramTypes = new Class [] { FeedPartition.class, Plan.class, Map.class };    
-    Constructor<OffsetStorage> offsetCons = null;
+    Class [] paramTypes = new Class [] { FeedPartition.class, Plan.class, Map.class };
+    NitFactory nit = new NitFactory();
+    NitDesc desc = new NitDesc();
+    desc.setSpec(NitDesc.NitSpec.JAVA_LOCAL_CLASSPATH);
+    desc.setConstructorParameters(paramTypes);
+    desc.setConstructorArguments( new Object [] { feedPartition, plan, offsetDesc.getParameters() });
     try {
-      offsetCons = (Constructor<OffsetStorage>) Class.forName(offsetDesc.getOperatorClass()).getConstructor(
-              paramTypes);
-    } catch (NoSuchMethodException | SecurityException | ClassNotFoundException e) {
-      throw new RuntimeException(e);
-    }
-    try {
-      offsetStorage = offsetCons.newInstance(feedPartition, plan, offsetDesc.getParameters());
-    } catch (InstantiationException | IllegalAccessException | IllegalArgumentException
-            | InvocationTargetException e) {
+      offsetStorage = nit.construct(desc);
+    } catch (NitException e) {
       throw new RuntimeException(e);
     }
     return offsetStorage;
@@ -230,3 +235,19 @@ public class DriverFactory {
     return urls;
   }
 }
+
+
+/*
+Constructor<OffsetStorage> offsetCons = null;
+try {
+  offsetCons = (Constructor<OffsetStorage>) Class.forName(offsetDesc.getOperatorClass()).getConstructor(
+          paramTypes);
+} catch (NoSuchMethodException | SecurityException | ClassNotFoundException e) {
+  throw new RuntimeException(e);
+}
+try {
+  offsetStorage = offsetCons.newInstance(feedPartition, plan, offsetDesc.getParameters());
+} catch (InstantiationException | IllegalAccessException | IllegalArgumentException
+        | InvocationTargetException e) {
+  throw new RuntimeException(e);
+}*/
