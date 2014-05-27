@@ -72,6 +72,12 @@
 			<scope>test</scope>
 		</dependency>
 
+		<dependency>
+    			<groupId>io.teknek</groupId>
+    			<artifactId>nit-compiler</artifactId>
+    			<version>0.0.4</version>
+		</dependency>
+
 		<!-- we may need this later <dependency> <groupId>org.eclipse.jetty</groupId> 
 			<artifactId>jetty-server</artifactId> <version>8.1.0.RC5</version> </dependency> -->
 

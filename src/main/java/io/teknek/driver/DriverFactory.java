@@ -24,6 +24,9 @@ import io.teknek.feed.Feed;
 import io.teknek.feed.FeedPartition;
 import io.teknek.model.GroovyOperator;
 import io.teknek.model.Operator;
+import io.teknek.nit.NitDesc;
+import io.teknek.nit.NitException;
+import io.teknek.nit.NitFactory;
 import io.teknek.offsetstorage.Offset;
 import io.teknek.offsetstorage.OffsetStorage;
 import io.teknek.plan.DynamicInstantiatable;
@@ -95,6 +98,24 @@ public class DriverFactory {
       recurseOperatorAndDriverNode(childDesc, childNode);
     }
   }
+  
+  private static NitDesc nitDescFromDynamic(DynamicInstantiatable d){
+    NitDesc nd = new NitDesc();
+    nd.setScript(d.getScript());
+    nd.setTheClass(d.getTheClass());
+    if (d.getSpec() == null || "java".equals(d.getSpec())){
+      nd.setSpec(NitDesc.NitSpec.JAVA_LOCAL_CLASSPATH);
+    } else if ("groovy".equals(d.getSpec())){
+      nd.setSpec(NitDesc.NitSpec.GROOVY_CLASS_LOADER);
+    } else if ("groovyclosure".equals(d.getSpec())){
+      nd.setSpec(NitDesc.NitSpec.GROOVY_CLOSURE);
+    } else if ("url".equals(d.getSpec())){
+      nd.setSpec(NitDesc.NitSpec.JAVA_URL_CLASSLOADER);
+    } else {
+      nd.setSpec(NitDesc.NitSpec.valueOf(d.getSpec()));
+    }
+    return nd;
+  }
 
   /**
    * OperatorDesc can describe local reasources, URL, loaded resources and dynamic resources like
@@ -105,39 +126,16 @@ public class DriverFactory {
    */
   public static Operator buildOperator(OperatorDesc operatorDesc) {
     Operator operator = null;
-    if (operatorDesc.getSpec() == null || "java".equalsIgnoreCase(operatorDesc.getSpec())){
-      try {
-        operator = (Operator) Class.forName(operatorDesc.getTheClass()).newInstance();
-      } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
-        throw new RuntimeException(e);
-      }
-    } else if (operatorDesc.getSpec().equalsIgnoreCase("url")) { 
-      List<URL> urls = parseSpecIntoUrlList(operatorDesc);
-      try (URLClassLoader loader = new URLClassLoader(urls.toArray(new URL[0]))) {
-        Class<?> c = loader.loadClass(operatorDesc.getTheClass());
-        operator = (Operator) c.newInstance();
-      } catch (ClassNotFoundException | InstantiationException | IllegalAccessException
-              | IOException e) {
-        e.printStackTrace();
-      }
-      
-    } else if (operatorDesc.getSpec().equals("groovy")){
-      try (GroovyClassLoader gc = new GroovyClassLoader()){
-        Class<?> c = gc.parseClass( operatorDesc.getScript()) ;
-        operator = (Operator) c.newInstance();
-      } catch (InstantiationException | IllegalAccessException | IOException e) {
-        throw new RuntimeException (e);
-      }
-    } else if (operatorDesc.getSpec().equals("groovyclosure")){
-      GroovyShell shell = new GroovyShell();
-      Object result = shell.evaluate(operatorDesc.getScript());
-      if (result instanceof Closure){
-        return new GroovyOperator((Closure) result);
+    NitFactory nitFactory = new NitFactory();
+    NitDesc nitDesc = nitDescFromDynamic(operatorDesc);
+    try {
+      if (nitDesc.getSpec() == NitDesc.NitSpec.GROOVY_CLOSURE){
+        operator = new GroovyOperator((Closure) nitFactory.construct(nitDesc));
       } else {
-        throw new RuntimeException("result was wrong type "+ result);
+        operator = nitFactory.construct(nitDesc);
       }
-    } else {
-      throw new RuntimeException(operatorDesc.getSpec() +" dont know how to handle that");
+    } catch (NitException e) {
+      throw new RuntimeException(e);
     }
     operator.setProperties(operatorDesc.getParameters());
     return operator;

@@ -60,7 +60,7 @@ public class Driver implements Runnable {
   public void run(){
     boolean hasNext = false;
     do {
-      if (!this.getGoOn()){
+      if (!goOn){
         break;
       }
       ITuple t = new Tuple();
