@@ -75,5 +75,8 @@ public class TestWorkerDao extends EmbeddedZooKeeperServer {
     Assert.assertEquals(ws.getFeedPartitionId(), statuses.get(0).getFeedPartitionId());
     Assert.assertEquals(ws.getWorkerUuid(), statuses.get(0).getWorkerUuid());
     zk.close();
+    zk = new ZooKeeper(zookeeperTestServer.getConnectString(), 100, dw);
+    WorkerDao.deletePlan(zk, p);
+    zk.close();
   }
 }
