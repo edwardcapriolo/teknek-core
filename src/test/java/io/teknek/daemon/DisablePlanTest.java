@@ -39,7 +39,7 @@ public class DisablePlanTest extends EmbeddedZooKeeperServer {
   }
 
   @Test
-  public void hangAround() {
+  public void hangAround() throws InterruptedException {
     final Plan p = new Plan().withFeedDesc(
             new FeedDesc().withFeedClass(FixedFeed.class.getName()).withProperties(
                     MapBuilder.makeMap(FixedFeed.NUMBER_OF_PARTITIONS, 2, FixedFeed.NUMBER_OF_ROWS,
@@ -104,6 +104,12 @@ public class DisablePlanTest extends EmbeddedZooKeeperServer {
       running += td1.workerThreads.get(p).size();
     }
     Assert.assertEquals(1, running);
+    
+    p.setDisabled(true);
+    td.applyPlan(p);
+    Thread.sleep(2000);
+    td.deletePlan(p);
+    
     
   }
 
