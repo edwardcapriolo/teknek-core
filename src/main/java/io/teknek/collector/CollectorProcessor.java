@@ -39,7 +39,7 @@ public class CollectorProcessor implements Runnable {
   //TODO benchmark this as an array
   private List<Operator> children;
 
-  private boolean goOn = true;
+  private volatile boolean goOn = true;
 
   private int tupleRetry;
 
@@ -53,18 +53,22 @@ public class CollectorProcessor implements Runnable {
    */
   public void run() {
     while (goOn) {
-      try {
-        ITuple tuple = collector.take();
-        handleTupple(tuple);
-      } catch (InterruptedException e) {
-        if (logger.isDebugEnabled()) {
-          logger.debug("While fetching tuple", e);
-        }
-        throw new RuntimeException(e);
-      }
+      takeOne();
     }
   }
 
+  @VisibleForTesting
+  public void takeOne(){
+    try {
+      ITuple tuple = collector.take();
+      handleTupple(tuple);
+    } catch (InterruptedException e) {
+      if (logger.isDebugEnabled()) {
+        logger.debug("While fetching tuple", e);
+      }
+      throw new RuntimeException(e);
+    }
+  }
   @VisibleForTesting
   /**
    * For each child operator, attempt up to tupleRetry times to call operator.handleTuple(). If the framework tries 
