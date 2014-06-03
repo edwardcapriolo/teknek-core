@@ -35,6 +35,7 @@ import org.apache.log4j.Logger;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.Watcher.Event.KeeperState;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.recipes.lock.LockListener;
 import org.apache.zookeeper.recipes.lock.WriteLock;
@@ -56,6 +57,7 @@ public class TeknekDaemon implements Watcher{
   ConcurrentHashMap<Plan, List<Worker>> workerThreads;
   private boolean goOn = true;
   private String hostname;
+  private CountDownLatch awaitConnection;
   
   public TeknekDaemon(Properties properties){
     this.properties = properties;
@@ -76,19 +78,13 @@ public class TeknekDaemon implements Watcher{
   }
   
   public void init() {
-    logger.debug("my UUID" + myId);
+    logger.debug("Daemon id:" + myId);
     logger.info("connecting to " + properties.getProperty(ZK_SERVER_LIST));
+    awaitConnection = new CountDownLatch(1);
     try {
-      zk = new ZooKeeper(properties.getProperty(ZK_SERVER_LIST), 100, this);
-      try {
-        Thread.sleep(1000);
-      } catch (InterruptedException e) {
-        /*
-         * Session establishment is asynchronous. This constructor will initiate connection to the server and return immediately - potentially (usually) before the session is fully established. The watcher argument specifies the watcher that will be notified of any changes in state. This notification can come at any point before or after the constructor call has returned. 
-         */
-        e.printStackTrace();
-      }
-    } catch (IOException e1) {
+      zk = new ZooKeeper(properties.getProperty(ZK_SERVER_LIST), 1000, this);
+      boolean connected = awaitConnection.await(10, TimeUnit.SECONDS);
+    } catch (IOException | InterruptedException e1) {
       throw new RuntimeException(e1);
     }
     try {
@@ -289,7 +285,9 @@ public class TeknekDaemon implements Watcher{
 
   @Override
   public void process(WatchedEvent event) {
-    // TODO Auto-generated method stub    
+    if (event.getState() == KeeperState.SyncConnected){
+      awaitConnection.countDown();
+    } 
   }
 
   public String getMyId() {

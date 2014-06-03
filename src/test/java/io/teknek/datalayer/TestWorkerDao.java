@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.zookeeper.ZooKeeper;
 import org.junit.Assert;
@@ -26,8 +27,8 @@ public class TestWorkerDao extends EmbeddedZooKeeperServer {
     String group = "io.teknek";
     String name = "abc";
     DummyWatcher dw = new DummyWatcher();
-    ZooKeeper zk = new ZooKeeper(zookeeperTestServer.getConnectString(), 100, dw);
-    Thread.sleep(200);//zk takes a long time so
+    ZooKeeper zk = new ZooKeeper(zookeeperTestServer.getConnectString(), 1000, dw);
+    dw.connectOrThrow(10, TimeUnit.SECONDS);
     OperatorDesc d = TestDriverFactory.buildGroovyOperatorDesc();
     WorkerDao.createZookeeperBase(zk);
     WorkerDao.saveOperatorDesc(zk, d, group, name);
@@ -52,7 +53,7 @@ public class TestWorkerDao extends EmbeddedZooKeeperServer {
     Bundle b = WorkerDao.getBundleFromUrl(f.toURL());
     DummyWatcher dw = new DummyWatcher();
     ZooKeeper zk = new ZooKeeper(zookeeperTestServer.getConnectString(), 100, dw);
-    Thread.sleep(400);//zk takes a long time so
+    dw.connectOrThrow(10, TimeUnit.SECONDS);
     WorkerDao.saveBundle(zk, b);
     OperatorDesc oDesc = WorkerDao.loadSavedOperatorDesc(zk, b.getPackageName(), "groovy_identity");
     Assert.assertEquals("groovy_identity", oDesc.getTheClass());
@@ -64,6 +65,7 @@ public class TestWorkerDao extends EmbeddedZooKeeperServer {
   public void persistStatus() throws WorkerDaoException, IOException, InterruptedException{
     DummyWatcher dw = new DummyWatcher();
     ZooKeeper zk = new ZooKeeper(zookeeperTestServer.getConnectString(), 100, dw);
+    dw.connectOrThrow(10, TimeUnit.SECONDS);
     WorkerStatus ws = new WorkerStatus("1","2","3");
     Plan p = new Plan().withName("persist");
     WorkerDao.createZookeeperBase(zk);

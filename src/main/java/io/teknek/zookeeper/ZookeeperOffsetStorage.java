@@ -3,6 +3,7 @@ package io.teknek.zookeeper;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -37,7 +38,9 @@ public class ZookeeperOffsetStorage extends OffsetStorage {
     ZooKeeper zk = null;
     String s = TEKNEK_OFFSET + "/" + plan.getName() + "-" + feedPartiton.getFeed().getName()+ "-" + feedPartiton.getPartitionId();
     try {
-      zk = new ZooKeeper(properties.get(ZK_CONNECT), 100, new DummyWatcher());
+      DummyWatcher dw = new DummyWatcher();
+      zk = new ZooKeeper(properties.get(ZK_CONNECT), 100, dw);
+      dw.connectOrThrow(10, TimeUnit.SECONDS);
       Stat stat = zk.exists(s, true);
       if (stat != null) {
         zk.setData(s, o.serialize(), stat.getVersion());
@@ -66,7 +69,9 @@ public class ZookeeperOffsetStorage extends OffsetStorage {
     String s = TEKNEK_OFFSET + "/" + plan.getName() + "-" + feedPartiton.getFeed().getName()+ "-" + feedPartiton.getPartitionId();
     ZooKeeper zk = null;
     try {
-      zk = new ZooKeeper(properties.get(ZK_CONNECT), 100, new DummyWatcher());
+      DummyWatcher dw = new DummyWatcher();
+      zk = new ZooKeeper(properties.get(ZK_CONNECT), 100, dw);
+      dw.connectOrThrow(10, TimeUnit.SECONDS);
       Stat stat = zk.exists(s, true);
       
       if (stat != null) {
@@ -83,8 +88,10 @@ public class ZookeeperOffsetStorage extends OffsetStorage {
   }
 
   public void createZookeeperBase() {
+    DummyWatcher dw = new DummyWatcher();
     try {
       ZooKeeper zk = new ZooKeeper(properties.get(ZK_CONNECT), 100, new DummyWatcher());
+      dw.connectOrThrow(10, TimeUnit.SECONDS);
       if (zk.exists(TEKNEK_ROOT, true) == null) {
         zk.create(TEKNEK_ROOT, new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
       }
