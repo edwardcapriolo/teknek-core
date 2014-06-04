@@ -15,6 +15,7 @@ limitations under the License.
 */
 package io.teknek.driver;
 
+import io.teknek.collector.Collector;
 import io.teknek.collector.CollectorProcessor;
 import io.teknek.driver.Driver;
 import io.teknek.driver.DriverNode;
@@ -101,6 +102,32 @@ public class TestDriver {
     
   }
   
+  
+  public static FeedPartition getPart1(){
+    Map<String,Object> prop = new HashMap<String,Object>();
+    int expectedPartitions = 5;
+    int expectedRows = 1000000;
+    prop.put(FixedFeed.NUMBER_OF_PARTITIONS, expectedPartitions);
+    prop.put(FixedFeed.NUMBER_OF_ROWS, expectedRows);
+    FixedFeed pf = new FixedFeed(prop);
+    List<FeedPartition> parts = pf.getFeedPartitions();
+    return parts.get(0);
+  }
+  
+  @Test
+  public void testFlowControl() throws InterruptedException {  
+    Driver root = new Driver(getPart1(), new Minus1Operator(), null, new CollectorProcessor(), 10);
+    root.initialize();
+    root.getDriverNode().toString();
+    root.getDriverNode().prettyPrint(1);
+    DriverNode child = new DriverNode(new Times2Operator(), new CollectorProcessor());
+    root.getDriverNode().addChild(child);
+    Thread t = new Thread(root);
+    t.start();
+    t.join(1000);
+    Assert.assertEquals(new Tuple().withField("x", Collector.DEFAULT_QUEUE_SIZE), root.getDriverNode().getCollectorProcessor().getCollector().peek());
+  }
+  
   @Test
   public void closeTest() throws InterruptedException {
     Driver root = new Driver(getPart(), new CloseDetectOperator(), null, new CollectorProcessor(), 10);
@@ -127,7 +154,6 @@ public class TestDriver {
     t.setField("x", -2);
     Tuple s = new Tuple();
     s.setField("x", -2);
-    
     Assert.assertTrue(t.equals(s));
   }
   
