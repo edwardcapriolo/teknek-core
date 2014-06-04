@@ -118,14 +118,13 @@ public class TestDriver {
   public void testFlowControl() throws InterruptedException {  
     Driver root = new Driver(getPart1(), new Minus1Operator(), null, new CollectorProcessor(), 10);
     root.initialize();
-    root.getDriverNode().toString();
-    root.getDriverNode().prettyPrint(1);
     DriverNode child = new DriverNode(new Times2Operator(), new CollectorProcessor());
     root.getDriverNode().addChild(child);
     Thread t = new Thread(root);
     t.start();
     t.join(1000);
-    Assert.assertEquals(new Tuple().withField("x", Collector.DEFAULT_QUEUE_SIZE), root.getDriverNode().getCollectorProcessor().getCollector().peek());
+    Assert.assertEquals(new Tuple().withField("x", Collector.DEFAULT_QUEUE_SIZE), 
+            root.getDriverNode().getCollectorProcessor().getCollector().peek());
   }
   
   @Test
