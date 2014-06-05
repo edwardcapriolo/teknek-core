@@ -18,7 +18,6 @@ package io.teknek.driver;
 
 import groovy.lang.Closure;
 import groovy.lang.GroovyClassLoader;
-import groovy.lang.GroovyShell;
 import io.teknek.collector.CollectorProcessor;
 import io.teknek.feed.Feed;
 import io.teknek.feed.FeedPartition;
@@ -36,13 +35,11 @@ import io.teknek.plan.OperatorDesc;
 import io.teknek.plan.Plan;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;

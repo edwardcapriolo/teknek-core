@@ -84,6 +84,9 @@ public class TeknekDaemon implements Watcher{
     try {
       zk = new ZooKeeper(properties.getProperty(ZK_SERVER_LIST), 1000, this);
       boolean connected = awaitConnection.await(10, TimeUnit.SECONDS);
+      if (!connected){
+        throw new RuntimeException("Did not connect before timeout");
+      }
     } catch (IOException | InterruptedException e1) {
       throw new RuntimeException(e1);
     }

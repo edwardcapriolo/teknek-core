@@ -66,12 +66,11 @@ public class Driver implements Runnable {
       ITuple t = new Tuple();
       hasNext = fp.next(t);
       tuplesSeen++;
-      boolean complete = false;
       int attempts = 0;
-      while (attempts++ < driverNode.getCollectorProcessor().getTupleRetry() + 1 && !complete) {
+      while (attempts++ < driverNode.getCollectorProcessor().getTupleRetry() + 1) {
         try {
           driverNode.getOperator().handleTuple(t);
-          complete = true;
+          break;
         } catch (RuntimeException ex) {
         }
       }
