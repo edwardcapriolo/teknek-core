@@ -38,7 +38,11 @@ public class Collector extends ICollector {
   
   @Override
   public void emit(ITuple out) {
-    collected.add(out);
+    try {
+      collected.put(out);
+    } catch (InterruptedException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   /**
