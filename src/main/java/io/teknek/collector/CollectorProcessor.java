@@ -80,15 +80,14 @@ public class CollectorProcessor implements Runnable {
       if (logger.isDebugEnabled()) {
         logger.debug("No children operators for this operator. Tuple not being passed on " + tuple);
       }
+      return;
     }
     for (Operator o : children) {
       int attemptCount = 0;
-      boolean complete = false;
-      //TODO this should be an ||?
-      while (attemptCount++ < tupleRetry + 1 && !complete) {
+      while (attemptCount++ < tupleRetry + 1) {
         try {
           o.handleTuple(tuple);
-          complete = true;
+          break;
         } catch (RuntimeException ex) {
           logger.debug("Exception handling tupple " + tuple, ex);
         }
