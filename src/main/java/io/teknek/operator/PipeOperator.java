@@ -1,4 +1,7 @@
-package io.teknek.model;
+package io.teknek.operator;
+
+import io.teknek.model.ITuple;
+import io.teknek.model.Operator;
 
 import java.io.IOException;
 import java.io.InputStream;
