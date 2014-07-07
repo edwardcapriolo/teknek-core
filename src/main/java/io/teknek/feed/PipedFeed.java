@@ -6,6 +6,4 @@ public class PipedFeed extends FeedPartitionAdapter {
     super(feed, partitionId);
   }
   
-  
-
 }
