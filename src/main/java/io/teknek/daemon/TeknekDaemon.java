@@ -193,9 +193,13 @@ public class TeknekDaemon implements Watcher{
     List<String> workerUuidsWorkingOnPlan = null;
     try {
       plan = WorkerDao.findPlanByName(zk, child);
+      if (!child.equals(plan.getName())){
+        logger.warn(String.format("Node name %s is not the same is the json value %s will not start", child, plan));
+        return;
+      }
       workerUuidsWorkingOnPlan = WorkerDao.findWorkersWorkingOnPlan(zk, plan);
     } catch (WorkerDaoException e) {
-      logger.error(e);
+      logger.error("Problem finding plan or workers for plan ", e);
       return;
     }
     if (alreadyAtMaxWorkersPerNode(plan, workerUuidsWorkingOnPlan, workerThreads.get(plan))){
