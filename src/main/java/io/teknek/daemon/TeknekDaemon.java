@@ -194,7 +194,7 @@ public class TeknekDaemon implements Watcher{
     try {
       plan = WorkerDao.findPlanByName(zk, child);
       if (!child.equals(plan.getName())){
-        logger.warn(String.format("Node name %s is not the same is the json value %s will not start", child, plan));
+        logger.warn(String.format("Node name %s is not the same is the json value %s will not start", child, plan.getName()));
         return;
       }
       workerUuidsWorkingOnPlan = WorkerDao.findWorkersWorkingOnPlan(zk, plan);
