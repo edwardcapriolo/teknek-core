@@ -78,8 +78,8 @@ public class TeknekDaemon implements Watcher{
   }
   
   public void init() {
-    logger.debug("Daemon id:" + myId);
-    logger.info("connecting to " + properties.getProperty(ZK_SERVER_LIST));
+    logger.info("Daemon id:" + myId);
+    logger.info("Connecting to:" + properties.getProperty(ZK_SERVER_LIST));
     awaitConnection = new CountDownLatch(1);
     try {
       zk = new ZooKeeper(properties.getProperty(ZK_SERVER_LIST), 1000, this);
@@ -108,18 +108,15 @@ public class TeknekDaemon implements Watcher{
                 considerStarting(child);
               }
             } else {
-              logger.debug("Will not attemt to start worker. Already at max workers "+ workerThreads.size());
+              logger.debug("Will not attempt to start worker. Already at max workers " + workerThreads.size());
             }
-           
           } catch (Exception ex){
-            logger.error("Exception during scan "+ex);
-            ex.printStackTrace();
+            logger.warn("Exception during scan", ex);
           }
           try {
             Thread.sleep(rescanMillis);
           } catch (InterruptedException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            logger.warn(e);
           }
         }
       }
@@ -131,7 +128,7 @@ public class TeknekDaemon implements Watcher{
     try {
       WorkerDao.createOrUpdatePlan(plan, zk);
     } catch (WorkerDaoException e) {
-      e.printStackTrace();
+      logger.warn("Failed writing/updating plan", e);
     }
   }
   
@@ -140,7 +137,7 @@ public class TeknekDaemon implements Watcher{
     try {
       WorkerDao.deletePlan(zk, plan);
     } catch (WorkerDaoException e) {
-      e.printStackTrace();
+      logger.warn("Failed deleting/updating plan", e);
     }
   }
   
@@ -151,7 +148,7 @@ public class TeknekDaemon implements Watcher{
    */
   public boolean isPlanSane(Plan plan){
     if (plan == null){
-      logger.error("did not find plan");
+      logger.warn("did not find plan");
       return false;
     }
     if (plan.isDisabled()){
@@ -159,7 +156,7 @@ public class TeknekDaemon implements Watcher{
       return false;
     }
     if (plan.getFeedDesc() == null){
-      logger.debug("feed was null "+ plan.getName());
+      logger.warn("feed was null "+ plan.getName());
       return false;
     }
     return true;
@@ -199,7 +196,7 @@ public class TeknekDaemon implements Watcher{
       }
       workerUuidsWorkingOnPlan = WorkerDao.findWorkersWorkingOnPlan(zk, plan);
     } catch (WorkerDaoException e) {
-      logger.error("Problem finding plan or workers for plan ", e);
+      logger.warn("Problem finding plan or workers for plan ", e);
       return;
     }
     if (alreadyAtMaxWorkersPerNode(plan, workerUuidsWorkingOnPlan, workerThreads.get(plan))){
@@ -208,15 +205,15 @@ public class TeknekDaemon implements Watcher{
     if (!isPlanSane(plan)){
       return;
     } 
-    logger.debug("trying to acqure lock on " + WorkerDao.LOCKS_ZK + "/"+ plan.getName());
+    logger.debug("trying to acqure lock on " + WorkerDao.LOCKS_ZK + "/" + plan.getName());
     try {
       WorkerDao.maybeCreatePlanLockDir(zk, plan);
     } catch (WorkerDaoException e1) {
-      logger.error(e1);
+      logger.warn(e1);
       return;
     }
     final CountDownLatch c = new CountDownLatch(1);
-    WriteLock l = new WriteLock(zk, WorkerDao.LOCKS_ZK + "/"+ plan.getName(), null);
+    WriteLock l = new WriteLock(zk, WorkerDao.LOCKS_ZK + "/" + plan.getName(), null);
     l.setLockListener(new LockListener(){
 
       @Override
@@ -240,11 +237,11 @@ public class TeknekDaemon implements Watcher{
       }*/
       boolean hasLatch = c.await(3000, TimeUnit.MILLISECONDS);
       if (hasLatch){
-        /* plan could have been disabled after latch:Maybe editin the plan should lock it as well */
+        /* plan could have been disabled after latch:Maybe editing the plan should lock it as well */
         try {
           plan = WorkerDao.findPlanByName(zk, child);
         } catch (WorkerDaoException e) {
-          logger.error(e);
+          logger.warn(e);
           return;
         }
         if (plan.isDisabled()){
@@ -273,8 +270,7 @@ public class TeknekDaemon implements Watcher{
       try {
         l.unlock();
       } catch (RuntimeException ex){
-        logger.debug(ex);
-        ex.printStackTrace();
+        logger.warn("Unable to unlock ", ex);
       }
     }
   }
