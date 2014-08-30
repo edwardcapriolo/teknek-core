@@ -80,7 +80,7 @@ public class Driver implements Runnable {
       ITuple t = new Tuple();
       long start = System.nanoTime();
       hasNext = fp.next(t);
-      timeToDequeue.update(start-System.nanoTime());
+      timeToDequeue.update(System.nanoTime() - start);
       tuplesSeen++;
       dequedByPlan.mark(1);
       int attempts = 0;
