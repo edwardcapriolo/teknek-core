@@ -33,11 +33,13 @@ public class Driver implements Runnable {
   private volatile boolean goOn;
   private long tuplesSeen;
   private OffsetStorage offsetStorage;
+  private MetricRegistry metricRegistry;
   /**
    * after how many tuples should the offset be committed. 0 disables offsetCommits
    */
   private int offsetCommitInterval;
   
+  private String planName;
   /**
    * 
    * @param fp feed partition to consume from
@@ -45,13 +47,14 @@ public class Driver implements Runnable {
    * @param offsetStorage can be null if user does not wish to have offset storage
    */
   public Driver(FeedPartition fp, Operator operator, OffsetStorage offsetStorage, 
-          CollectorProcessor collectorProcessor, int offsetCommitInterval){
+          CollectorProcessor collectorProcessor, int offsetCommitInterval, MetricRegistry metricRegistry, String planName){
     this.fp = fp;
     driverNode = new DriverNode(operator, collectorProcessor);
     this.offsetStorage = offsetStorage;
     goOn = true;
-    tuplesSeen = 0;
     this.offsetCommitInterval = offsetCommitInterval;
+    this.metricRegistry = metricRegistry;
+    this.planName = planName;
   }
   
   public void initialize(){

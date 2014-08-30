@@ -73,7 +73,7 @@ public class DriverFactory {
     CollectorProcessor cp = new CollectorProcessor();
     cp.setTupleRetry(plan.getTupleRetry());
     int offsetCommitInterval = plan.getOffsetCommitInterval();
-    Driver driver = new Driver(feedPartition, oper, offsetStorage, cp, offsetCommitInterval);
+    Driver driver = new Driver(feedPartition, oper, offsetStorage, cp, offsetCommitInterval, metricRegistry, plan.getName());
     recurseOperatorAndDriverNode(desc, driver.getDriverNode(), metricRegistry, feedPartition);
     return driver;
   }
