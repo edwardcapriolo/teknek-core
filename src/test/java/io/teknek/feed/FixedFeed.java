@@ -54,9 +54,9 @@ class FixedFeedPartition extends FeedPartitionAdapter {
   private int max = 10;
   
   public FixedFeedPartition(Feed f, String partitionId) {
-    super(f , partitionId);
-    if (f.getProperties().get(FixedFeed.NUMBER_OF_ROWS)!=null){
-      max = Integer.parseInt( f.getProperties().get(FixedFeed.NUMBER_OF_ROWS).toString() );
+    super(f, partitionId);
+    if (f.getProperties().get(FixedFeed.NUMBER_OF_ROWS) != null) {
+      max = Integer.parseInt(f.getProperties().get(FixedFeed.NUMBER_OF_ROWS).toString());
     }
   }
 
