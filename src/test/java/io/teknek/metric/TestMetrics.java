@@ -20,15 +20,14 @@ import io.teknek.util.MapBuilder;
 
 public class TestMetrics {
 
-  public static FeedPartition getPart(){
+  public static List<FeedPartition> getPart(){
     Map<String,Object> prop = new HashMap<String,Object>();
     int expectedPartitions = 2;
     int expectedRows = 10;
     prop.put(FixedFeed.NUMBER_OF_PARTITIONS, expectedPartitions);
     prop.put(FixedFeed.NUMBER_OF_ROWS, expectedRows);
     FixedFeed pf = new FixedFeed(prop);
-    List<FeedPartition> parts = pf.getFeedPartitions();
-    return parts.get(0);
+    return pf.getFeedPartitions();
   }
   
   public static Plan metricTestPlan(){
@@ -44,14 +43,29 @@ public class TestMetrics {
   @Test
   public void simpleTest() throws InterruptedException {
     MetricRegistry mr = new MetricRegistry();
-    Driver driver = DriverFactory.createDriver(getPart(), metricTestPlan(), mr);
-    Thread t = new Thread(driver);
-    t.start();
-    t.join(1000000);
+    {
+      Driver driver = DriverFactory.createDriver(getPart().get(0), metricTestPlan(), mr);
+      Thread t = new Thread(driver);
+      t.start();
+      t.join(1000000);
+    }
     Assert.assertEquals(10L, mr.counter("a.b").getCount());
     Assert.assertEquals(10L, mr.counter("simple.OperatorWithMetrics.processed").getCount());
     Assert.assertEquals(10L, mr.counter("simple.OperatorWithMetrics.0.processed").getCount());
     Assert.assertEquals(10L, mr.counter("simple.FixedFeed.processed").getCount());
     Assert.assertEquals(10L, mr.counter("simple.FixedFeed.0.processed").getCount());
+    {
+      Driver driver = DriverFactory.createDriver(getPart().get(1), metricTestPlan(), mr);
+      Thread t = new Thread(driver);
+      t.start();
+      t.join(1000000);
+    }
+    Assert.assertEquals(20L, mr.counter("a.b").getCount());
+    Assert.assertEquals(20L, mr.counter("simple.OperatorWithMetrics.processed").getCount());
+    Assert.assertEquals(20L, mr.counter("simple.FixedFeed.processed").getCount());
+    Assert.assertEquals(10L, mr.counter("simple.OperatorWithMetrics.0.processed").getCount());
+    Assert.assertEquals(10L, mr.counter("simple.FixedFeed.0.processed").getCount());
+    Assert.assertEquals(10L, mr.counter("simple.OperatorWithMetrics.1.processed").getCount());
+    Assert.assertEquals(10L, mr.counter("simple.FixedFeed.1.processed").getCount());
   }
 }
