@@ -50,6 +50,6 @@ public class TestMetrics {
     t.start();
     t.join(1000000);
     Assert.assertEquals(10L, mr.counter("a.b").getCount());
-    Assert.assertEquals(10L, mr.counter("simple.OperatorWithMetrics").getCount());
+    Assert.assertEquals(10L, mr.counter("simple.OperatorWithMetrics.processed").getCount());
   }
 }
