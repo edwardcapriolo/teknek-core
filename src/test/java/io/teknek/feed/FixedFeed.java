@@ -66,6 +66,8 @@ class FixedFeedPartition extends FeedPartitionAdapter {
       throw new RuntimeException("This time you have went to far");
     }
     t.setField("x", new Integer(current));
+    getMetricRegistry().counter(getPath() +".processed").inc();
+    getMetricRegistry().counter(getPath() + "." +getPartitionId() + ".processed").inc();
     return ++current < max;
   }
     

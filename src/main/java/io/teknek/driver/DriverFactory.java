@@ -58,6 +58,7 @@ public class DriverFactory {
    * @return an uninitialized Driver
    */
   public static Driver createDriver(FeedPartition feedPartition, Plan plan, MetricRegistry metricRegistry){
+    populateFeedMetricInfo(plan, feedPartition, metricRegistry);
     OperatorDesc desc = plan.getRootOperator();
     Operator oper = buildOperator(desc, metricRegistry, plan.getName());
     OffsetStorage offsetStorage = null;
@@ -184,4 +185,16 @@ public class DriverFactory {
     return feed;
   }
   
+  private static void populateFeedMetricInfo(Plan p, FeedPartition fp, MetricRegistry r){
+    String myName = p.getFeedDesc().getName();
+    if (myName == null){
+      myName = p.getFeedDesc().getTheClass();
+      if (myName.indexOf(".") > -1){
+        String[] parts = myName.split("\\.");
+        myName = parts[parts.length-1];
+      }
+    }
+    fp.setPath(p.getName() + "." + myName);
+    fp.setMetricRegistry(r);
+  }
 }

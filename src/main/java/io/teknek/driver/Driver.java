@@ -15,6 +15,7 @@ limitations under the License.
 */
 package io.teknek.driver;
 
+import com.codahale.metrics.MetricRegistry;
 import com.google.common.annotations.VisibleForTesting;
 
 import io.teknek.collector.CollectorProcessor;
@@ -43,7 +44,8 @@ public class Driver implements Runnable {
    * @param operator root operator of the driver
    * @param offsetStorage can be null if user does not wish to have offset storage
    */
-  public Driver(FeedPartition fp, Operator operator, OffsetStorage offsetStorage, CollectorProcessor collectorProcessor, int offsetCommitInterval ){
+  public Driver(FeedPartition fp, Operator operator, OffsetStorage offsetStorage, 
+          CollectorProcessor collectorProcessor, int offsetCommitInterval){
     this.fp = fp;
     driverNode = new DriverNode(operator, collectorProcessor);
     this.offsetStorage = offsetStorage;
