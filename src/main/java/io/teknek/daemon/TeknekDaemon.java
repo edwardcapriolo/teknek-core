@@ -17,6 +17,7 @@ package io.teknek.daemon;
 
 import io.teknek.datalayer.WorkerDao;
 import io.teknek.datalayer.WorkerDaoException;
+import io.teknek.graphite.reporter.SimpleJmxReporter;
 import io.teknek.plan.Plan;
 
 import java.io.IOException;
@@ -40,6 +41,7 @@ import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.recipes.lock.LockListener;
 import org.apache.zookeeper.recipes.lock.WriteLock;
 
+import com.codahale.metrics.MetricRegistry;
 import com.google.common.annotations.VisibleForTesting;
 
 public class TeknekDaemon implements Watcher{
@@ -58,6 +60,8 @@ public class TeknekDaemon implements Watcher{
   private boolean goOn = true;
   private String hostname;
   private CountDownLatch awaitConnection;
+  private MetricRegistry metricRegistry;
+  private SimpleJmxReporter jmxReporter;
   
   public TeknekDaemon(Properties properties){
     this.properties = properties;
@@ -75,9 +79,12 @@ public class TeknekDaemon implements Watcher{
     } catch (UnknownHostException ex) {
       setHostname("unknown");
     }
+    metricRegistry = new MetricRegistry();
+    jmxReporter = new SimpleJmxReporter(metricRegistry, "io.teknek.teknekcore");
   }
   
   public void init() {
+    jmxReporter.init();
     logger.info("Daemon id:" + myId);
     logger.info("Connecting to:" + properties.getProperty(ZK_SERVER_LIST));
     awaitConnection = new CountDownLatch(1);
@@ -324,6 +331,14 @@ public class TeknekDaemon implements Watcher{
   @VisibleForTesting
   void setHostname(String hostname) {
     this.hostname = hostname;
+  }
+  
+  public MetricRegistry getMetricRegistry() {
+    return metricRegistry;
+  }
+
+  public void setMetricRegistry(MetricRegistry metricRegistry) {
+    this.metricRegistry = metricRegistry;
   }
 
   public static void main (String [] args){

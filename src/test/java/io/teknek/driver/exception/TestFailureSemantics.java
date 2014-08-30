@@ -7,6 +7,8 @@ import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import com.codahale.metrics.MetricRegistry;
+
 import io.teknek.driver.Driver;
 import io.teknek.driver.DriverFactory;
 import io.teknek.driver.DriverNode;
@@ -46,7 +48,7 @@ public class TestFailureSemantics {
   @Test
   public void goodLuck() throws InterruptedException{
     Plan plan = createAPlanForDisaster();
-    Driver driver = DriverFactory.createDriver(TestDriver.getPart(), plan);
+    Driver driver = DriverFactory.createDriver(TestDriver.getPart(), plan, new MetricRegistry());
     driver.initialize();
     driver.prettyPrint();
     DriverNode minus1Node = driver.getDriverNode().getChildren().get(0).getChildren().get(0);

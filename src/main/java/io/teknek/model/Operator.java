@@ -17,6 +17,8 @@ package io.teknek.model;
 
 import java.util.Map;
 
+import com.codahale.metrics.MetricRegistry;
+
 /**
  * Represents processing logic. An operator takes a tuple as input and emits 0 or more tuples to the
  * output collector.
@@ -24,6 +26,9 @@ import java.util.Map;
  */
 public abstract class Operator {
 
+  /** Metric registry for metrics **/
+  private MetricRegistry metricRegistry;
+  
   /**
    * Configuration properties that are passed at initialization to the operator
    */
@@ -87,6 +92,14 @@ public abstract class Operator {
 
   public Map<String, Object> getProperties() {
     return properties;
+  }
+
+  public MetricRegistry getMetricRegistry() {
+    return metricRegistry;
+  }
+
+  public void setMetricRegistry(MetricRegistry metricRegistry) {
+    this.metricRegistry = metricRegistry;
   }
 
 }

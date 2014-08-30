@@ -38,6 +38,7 @@ import java.util.Map;
 
 import org.apache.log4j.Logger;
 
+import com.codahale.metrics.MetricRegistry;
 import com.google.common.base.Charsets;
 
 /**
@@ -56,9 +57,9 @@ public class DriverFactory {
    * @param plan
    * @return an uninitialized Driver
    */
-  public static Driver createDriver(FeedPartition feedPartition, Plan plan){
+  public static Driver createDriver(FeedPartition feedPartition, Plan plan, MetricRegistry metricRegistry){
     OperatorDesc desc = plan.getRootOperator();
-    Operator oper = buildOperator(desc);
+    Operator oper = buildOperator(desc, metricRegistry);
     OffsetStorage offsetStorage = null;
     OffsetStorageDesc offsetDesc = plan.getOffsetStorageDesc();
     if (offsetDesc != null && feedPartition.supportsOffsetManagement()){
@@ -72,19 +73,19 @@ public class DriverFactory {
     cp.setTupleRetry(plan.getTupleRetry());
     int offsetCommitInterval = plan.getOffsetCommitInterval();
     Driver driver = new Driver(feedPartition, oper, offsetStorage, cp, offsetCommitInterval);
-    recurseOperatorAndDriverNode(desc, driver.getDriverNode());
+    recurseOperatorAndDriverNode(desc, driver.getDriverNode(), metricRegistry);
     return driver;
   }
   
-  private static void recurseOperatorAndDriverNode(OperatorDesc desc, DriverNode node){
+  private static void recurseOperatorAndDriverNode(OperatorDesc desc, DriverNode node, MetricRegistry metricRegistry){
     List<OperatorDesc> children = desc.getChildren();
     for (OperatorDesc childDesc: children){
-      Operator oper = buildOperator(childDesc);
+      Operator oper = buildOperator(childDesc, metricRegistry);
       CollectorProcessor cp = new CollectorProcessor();
       cp.setTupleRetry(node.getCollectorProcessor().getTupleRetry());
       DriverNode childNode = new DriverNode(oper, cp);
       node.addChild(childNode);
-      recurseOperatorAndDriverNode(childDesc, childNode);
+      recurseOperatorAndDriverNode(childDesc, childNode, metricRegistry);
     }
   }
   
@@ -121,7 +122,7 @@ public class DriverFactory {
    * @param operatorDesc
    * @return
    */
-  public static Operator buildOperator(OperatorDesc operatorDesc) {
+  public static Operator buildOperator(OperatorDesc operatorDesc, MetricRegistry metricRegistry) {
     Operator operator = null;
     NitFactory nitFactory = new NitFactory();
     NitDesc nitDesc = nitDescFromDynamic(operatorDesc);
@@ -135,6 +136,7 @@ public class DriverFactory {
       throw new RuntimeException(e);
     }
     operator.setProperties(operatorDesc.getParameters());
+    operator.setMetricRegistry(metricRegistry);
     return operator;
   }
   
