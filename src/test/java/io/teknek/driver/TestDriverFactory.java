@@ -196,7 +196,7 @@ public class TestDriverFactory {
   
   @Test
   public void operatorTest(){
-    Operator operator = DriverFactory.buildOperator(buildGroovyOperatorDesc(), new MetricRegistry());
+    Operator operator = DriverFactory.buildOperator(buildGroovyOperatorDesc(), new MetricRegistry(), "aplan");
     Assert.assertNotNull(operator);
     Assert.assertEquals ("ATry", operator.getClass().getName());
     Assert.assertEquals( "A",  operator.getProperties().get("a"));
@@ -214,7 +214,7 @@ public class TestDriverFactory {
   @Test
   public void groovyClosureTest() throws InterruptedException{
     OperatorDesc o = getIdentityGroovyOperator();
-    Operator operator = DriverFactory.buildOperator(o, new MetricRegistry());
+    Operator operator = DriverFactory.buildOperator(o, new MetricRegistry(), "aplan");
     operator.setCollector(new Collector());
     Assert.assertNotNull(operator);
     Assert.assertEquals ("io.teknek.model.GroovyOperator", operator.getClass().getName());
@@ -233,7 +233,7 @@ public class TestDriverFactory {
     File f = new File("src/test/resources/id.jar");
     Assert.assertTrue(f.exists());
     o.setScript(f.toURL().toString());
-    Operator oo = DriverFactory.buildOperator(o, new MetricRegistry());
+    Operator oo = DriverFactory.buildOperator(o, new MetricRegistry(), "aplan");
     Assert.assertEquals(cname, oo.getClass().getName());
   }
 }

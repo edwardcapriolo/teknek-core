@@ -25,6 +25,9 @@ import com.codahale.metrics.MetricRegistry;
  * 
  */
 public abstract class Operator {
+  
+  /** A path used to locate the operator in the plan path. For example myplan.myop1.myop2 */
+  private String path;
 
   /** Metric registry for metrics **/
   private MetricRegistry metricRegistry;
@@ -102,4 +105,20 @@ public abstract class Operator {
     this.metricRegistry = metricRegistry;
   }
 
+  /**
+   * 
+   * @return the path to the operator in the form of plan.operator[.operator]...
+   */
+  public String getPath() {
+    return path;
+  }
+
+  /**
+   * End users should not need to set this as it set by the DriverFactory at construction
+   * @param path
+   */
+  public void setPath(String path) {
+    this.path = path;
+  }
+  
 }

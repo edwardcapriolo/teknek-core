@@ -8,6 +8,7 @@ public class OperatorWithMetrics extends Operator {
   @Override
   public void handleTuple(ITuple tuple) {
     getMetricRegistry().counter("a.b").inc();
+    getMetricRegistry().counter(getPath()).inc();
   }
   
 }

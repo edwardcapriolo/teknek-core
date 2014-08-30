@@ -59,7 +59,7 @@ public class DriverFactory {
    */
   public static Driver createDriver(FeedPartition feedPartition, Plan plan, MetricRegistry metricRegistry){
     OperatorDesc desc = plan.getRootOperator();
-    Operator oper = buildOperator(desc, metricRegistry);
+    Operator oper = buildOperator(desc, metricRegistry, plan.getName());
     OffsetStorage offsetStorage = null;
     OffsetStorageDesc offsetDesc = plan.getOffsetStorageDesc();
     if (offsetDesc != null && feedPartition.supportsOffsetManagement()){
@@ -80,7 +80,7 @@ public class DriverFactory {
   private static void recurseOperatorAndDriverNode(OperatorDesc desc, DriverNode node, MetricRegistry metricRegistry){
     List<OperatorDesc> children = desc.getChildren();
     for (OperatorDesc childDesc: children){
-      Operator oper = buildOperator(childDesc, metricRegistry);
+      Operator oper = buildOperator(childDesc, metricRegistry, node.getOperator().getPath());
       CollectorProcessor cp = new CollectorProcessor();
       cp.setTupleRetry(node.getCollectorProcessor().getTupleRetry());
       DriverNode childNode = new DriverNode(oper, cp);
@@ -122,7 +122,7 @@ public class DriverFactory {
    * @param operatorDesc
    * @return
    */
-  public static Operator buildOperator(OperatorDesc operatorDesc, MetricRegistry metricRegistry) {
+  public static Operator buildOperator(OperatorDesc operatorDesc, MetricRegistry metricRegistry, String planPath) {
     Operator operator = null;
     NitFactory nitFactory = new NitFactory();
     NitDesc nitDesc = nitDescFromDynamic(operatorDesc);
@@ -137,6 +137,15 @@ public class DriverFactory {
     }
     operator.setProperties(operatorDesc.getParameters());
     operator.setMetricRegistry(metricRegistry);
+    String myName = operatorDesc.getName();
+    if (myName == null){
+      myName = operatorDesc.getTheClass();
+      if (myName.indexOf(".") > -1){
+        String[] parts = myName.split("\\.");
+        myName = parts[parts.length-1];
+      }
+    }
+    operator.setPath(planPath + "." + myName);
     return operator;
   }
   

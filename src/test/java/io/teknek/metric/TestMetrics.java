@@ -38,6 +38,7 @@ public class TestMetrics {
       .withFeedClass(FixedFeed.class.getName())
         .withProperties(MapBuilder.makeMap(FixedFeed.NUMBER_OF_PARTITIONS, 2, FixedFeed.NUMBER_OF_ROWS,10)))
      .withRootOperator(new OperatorDesc(new OperatorWithMetrics()));
+    plan.setName("simple");
     return plan;
   }
   
@@ -49,5 +50,6 @@ public class TestMetrics {
     t.start();
     t.join(1000000);
     Assert.assertEquals(10L, mr.counter("a.b").getCount());
+    Assert.assertEquals(10L, mr.counter("simple.OperatorWithMetrics").getCount());
   }
 }
