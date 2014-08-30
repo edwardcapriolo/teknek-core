@@ -11,7 +11,6 @@ import com.codahale.metrics.MetricRegistry;
 
 import io.teknek.driver.Driver;
 import io.teknek.driver.DriverFactory;
-import io.teknek.driver.TestDriver;
 import io.teknek.feed.FeedPartition;
 import io.teknek.feed.FixedFeed;
 import io.teknek.plan.FeedDesc;

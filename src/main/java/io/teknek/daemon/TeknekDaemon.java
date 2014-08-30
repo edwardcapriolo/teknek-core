@@ -80,7 +80,7 @@ public class TeknekDaemon implements Watcher{
       setHostname("unknown");
     }
     metricRegistry = new MetricRegistry();
-    jmxReporter = new SimpleJmxReporter(metricRegistry, "io.teknek.teknekcore");
+    jmxReporter = new SimpleJmxReporter(metricRegistry, "teknek-core");
   }
   
   public void init() {
