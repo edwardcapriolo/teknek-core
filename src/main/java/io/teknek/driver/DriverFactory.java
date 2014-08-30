@@ -60,7 +60,7 @@ public class DriverFactory {
   public static Driver createDriver(FeedPartition feedPartition, Plan plan, MetricRegistry metricRegistry){
     populateFeedMetricInfo(plan, feedPartition, metricRegistry);
     OperatorDesc desc = plan.getRootOperator();
-    Operator oper = buildOperator(desc, metricRegistry, plan.getName());
+    Operator oper = buildOperator(desc, metricRegistry, plan.getName(), feedPartition);
     OffsetStorage offsetStorage = null;
     OffsetStorageDesc offsetDesc = plan.getOffsetStorageDesc();
     if (offsetDesc != null && feedPartition.supportsOffsetManagement()){
@@ -74,19 +74,20 @@ public class DriverFactory {
     cp.setTupleRetry(plan.getTupleRetry());
     int offsetCommitInterval = plan.getOffsetCommitInterval();
     Driver driver = new Driver(feedPartition, oper, offsetStorage, cp, offsetCommitInterval);
-    recurseOperatorAndDriverNode(desc, driver.getDriverNode(), metricRegistry);
+    recurseOperatorAndDriverNode(desc, driver.getDriverNode(), metricRegistry, feedPartition);
     return driver;
   }
   
-  private static void recurseOperatorAndDriverNode(OperatorDesc desc, DriverNode node, MetricRegistry metricRegistry){
+  private static void recurseOperatorAndDriverNode(OperatorDesc desc, DriverNode node, 
+          MetricRegistry metricRegistry, FeedPartition feedPartition){
     List<OperatorDesc> children = desc.getChildren();
     for (OperatorDesc childDesc: children){
-      Operator oper = buildOperator(childDesc, metricRegistry, node.getOperator().getPath());
+      Operator oper = buildOperator(childDesc, metricRegistry, node.getOperator().getPath(), feedPartition);
       CollectorProcessor cp = new CollectorProcessor();
       cp.setTupleRetry(node.getCollectorProcessor().getTupleRetry());
       DriverNode childNode = new DriverNode(oper, cp);
       node.addChild(childNode);
-      recurseOperatorAndDriverNode(childDesc, childNode, metricRegistry);
+      recurseOperatorAndDriverNode(childDesc, childNode, metricRegistry, feedPartition);
     }
   }
   
@@ -123,7 +124,7 @@ public class DriverFactory {
    * @param operatorDesc
    * @return
    */
-  public static Operator buildOperator(OperatorDesc operatorDesc, MetricRegistry metricRegistry, String planPath) {
+  public static Operator buildOperator(OperatorDesc operatorDesc, MetricRegistry metricRegistry, String planPath, FeedPartition feedPartition) {
     Operator operator = null;
     NitFactory nitFactory = new NitFactory();
     NitDesc nitDesc = nitDescFromDynamic(operatorDesc);
@@ -138,6 +139,7 @@ public class DriverFactory {
     }
     operator.setProperties(operatorDesc.getParameters());
     operator.setMetricRegistry(metricRegistry);
+    operator.setPartitionId(feedPartition.getPartitionId());
     String myName = operatorDesc.getName();
     if (myName == null){
       myName = operatorDesc.getTheClass();

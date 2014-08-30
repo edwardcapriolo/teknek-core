@@ -28,6 +28,8 @@ import java.util.Map;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.codahale.metrics.MetricRegistry;
+
 public class TestFixedFeed {
 
   private static final int EXPECTED_PARTITIONS = 5;
@@ -45,8 +47,10 @@ public class TestFixedFeed {
     FixedFeed pf = new FixedFeed(buildFeedProps());
     List<FeedPartition> parts = pf.getFeedPartitions();
     Assert.assertEquals(EXPECTED_PARTITIONS, parts.size());
+    
     ITuple t = new Tuple();
     boolean hasNext = false;
+    parts.get(0).setMetricRegistry(new MetricRegistry());
     hasNext = parts.get(0).next(t);
     Assert.assertEquals( t.getField("x"), 0);
     Assert.assertTrue(hasNext);
@@ -70,6 +74,7 @@ public class TestFixedFeed {
 
     }
 
+    parts.get(1).setMetricRegistry(new MetricRegistry());
     parts.get(1).next(t);
     Assert.assertEquals(t.getField("x"), 0);
     parts.get(1).next(t);
@@ -82,6 +87,7 @@ public class TestFixedFeed {
     List<FeedPartition> parts = pf.getFeedPartitions();
     Assert.assertEquals(EXPECTED_PARTITIONS, parts.size());
     ITuple t = new Tuple();
+    parts.get(0).setMetricRegistry(new MetricRegistry());
     parts.get(0).setOffset("2");
     parts.get(0).next(t);
     Assert.assertEquals( t.getField("x"), 2);

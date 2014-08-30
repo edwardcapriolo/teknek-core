@@ -32,6 +32,9 @@ public abstract class Operator {
   /** Metric registry for metrics **/
   private MetricRegistry metricRegistry;
   
+  /** The partition of the feed we are bound to */
+  private String partitionId;
+  
   /**
    * Configuration properties that are passed at initialization to the operator
    */
@@ -119,6 +122,18 @@ public abstract class Operator {
    */
   public void setPath(String path) {
     this.path = path;
+  }
+
+  public String getPartitionId() {
+    return partitionId;
+  }
+
+  /**
+   * End users should not need to set this as it set by the DriverFactory at construction
+   * @param path
+   */
+  public void setPartitionId(String partitionId) {
+    this.partitionId = partitionId;
   }
   
 }

@@ -36,6 +36,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.codahale.metrics.MetricRegistry;
+
 
 public class TestDriver {
 
@@ -47,6 +49,7 @@ public class TestDriver {
     prop.put(FixedFeed.NUMBER_OF_ROWS, expectedRows);
     FixedFeed pf = new FixedFeed(prop);
     List<FeedPartition> parts = pf.getFeedPartitions();
+    parts.get(0).setMetricRegistry(new MetricRegistry());
     return parts.get(0);
   }
   
@@ -111,6 +114,7 @@ public class TestDriver {
     prop.put(FixedFeed.NUMBER_OF_ROWS, expectedRows);
     FixedFeed pf = new FixedFeed(prop);
     List<FeedPartition> parts = pf.getFeedPartitions();
+    parts.get(0).setMetricRegistry(new MetricRegistry());
     return parts.get(0);
   }
   
