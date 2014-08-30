@@ -7,9 +7,9 @@ public class OperatorWithMetrics extends Operator {
 
   @Override
   public void handleTuple(ITuple tuple) {
-    getMetricRegistry().counter("a.b").inc();
-    getMetricRegistry().counter(getPath() + ".processed").inc();
-    getMetricRegistry().counter(getPath() + "." + this.getPartitionId() + ".processed").inc();
+    getMetricRegistry().meter("a.b").mark();
+    getMetricRegistry().meter(getPath() + ".processed").mark();
+    getMetricRegistry().meter(getPath() + "." + this.getPartitionId() + ".processed").mark();
   }
   
 }

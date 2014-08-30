@@ -15,6 +15,8 @@ limitations under the License.
 */
 package io.teknek.driver;
 
+import com.codahale.metrics.Histogram;
+import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.annotations.VisibleForTesting;
 
@@ -33,13 +35,17 @@ public class Driver implements Runnable {
   private volatile boolean goOn;
   private long tuplesSeen;
   private OffsetStorage offsetStorage;
-  private MetricRegistry metricRegistry;
   /**
    * after how many tuples should the offset be committed. 0 disables offsetCommits
    */
   private int offsetCommitInterval;
   
-  private String planName;
+  private final Meter dequedByPlan;
+  private final Histogram timeToDequeue;
+  private final Meter processedByPlan;
+  private final Meter retriesByPlan;
+  private final Histogram timeToProcess;
+
   /**
    * 
    * @param fp feed partition to consume from
@@ -48,13 +54,16 @@ public class Driver implements Runnable {
    */
   public Driver(FeedPartition fp, Operator operator, OffsetStorage offsetStorage, 
           CollectorProcessor collectorProcessor, int offsetCommitInterval, MetricRegistry metricRegistry, String planName){
+    this.driverNode = new DriverNode(operator, collectorProcessor);
+    this.goOn = true;
     this.fp = fp;
-    driverNode = new DriverNode(operator, collectorProcessor);
     this.offsetStorage = offsetStorage;
-    goOn = true;
     this.offsetCommitInterval = offsetCommitInterval;
-    this.metricRegistry = metricRegistry;
-    this.planName = planName;
+    this.dequedByPlan = metricRegistry.meter(planName + ".driver." + "deque");
+    this.timeToDequeue = metricRegistry.histogram(planName + ".driver." + "dequeue_time_nanos");
+    this.processedByPlan = metricRegistry.meter(planName + ".driver." + "processed");
+    this.retriesByPlan = metricRegistry.meter(planName + ".driver." + "retries");
+    this.timeToProcess = metricRegistry.histogram(planName + ".driver." + "process_time_nanos");
   }
   
   public void initialize(){
@@ -69,16 +78,23 @@ public class Driver implements Runnable {
         break;
       }
       ITuple t = new Tuple();
+      long start = System.nanoTime();
       hasNext = fp.next(t);
+      timeToDequeue.update(start-System.nanoTime());
       tuplesSeen++;
+      dequedByPlan.mark(1);
       int attempts = 0;
+      long processStart = System.nanoTime();
       while (attempts++ < driverNode.getCollectorProcessor().getTupleRetry() + 1) {
         try {
           driverNode.getOperator().handleTuple(t);
+          processedByPlan.mark();
           break;
         } catch (RuntimeException ex) {
+          retriesByPlan.mark();
         }
       }
+      timeToProcess.update(System.nanoTime() - processStart);
       maybeDoOffset();
       if (!hasNext) {
         break;

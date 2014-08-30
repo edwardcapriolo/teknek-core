@@ -49,23 +49,25 @@ public class TestMetrics {
       t.start();
       t.join(1000000);
     }
-    Assert.assertEquals(10L, mr.counter("a.b").getCount());
-    Assert.assertEquals(10L, mr.counter("simple.OperatorWithMetrics.processed").getCount());
-    Assert.assertEquals(10L, mr.counter("simple.OperatorWithMetrics.0.processed").getCount());
-    Assert.assertEquals(10L, mr.counter("simple.FixedFeed.processed").getCount());
-    Assert.assertEquals(10L, mr.counter("simple.FixedFeed.0.processed").getCount());
+    Assert.assertEquals(10L, mr.meter("a.b").getCount());
+    Assert.assertEquals(10L, mr.meter("simple.OperatorWithMetrics.processed").getCount());
+    Assert.assertEquals(10L, mr.meter("simple.OperatorWithMetrics.0.processed").getCount());
+    Assert.assertEquals(10L, mr.meter("simple.FixedFeed.processed").getCount());
+    Assert.assertEquals(10L, mr.meter("simple.FixedFeed.0.processed").getCount());
     {
       Driver driver = DriverFactory.createDriver(getPart().get(1), metricTestPlan(), mr);
       Thread t = new Thread(driver);
       t.start();
       t.join(1000000);
     }
-    Assert.assertEquals(20L, mr.counter("a.b").getCount());
-    Assert.assertEquals(20L, mr.counter("simple.OperatorWithMetrics.processed").getCount());
-    Assert.assertEquals(20L, mr.counter("simple.FixedFeed.processed").getCount());
-    Assert.assertEquals(10L, mr.counter("simple.OperatorWithMetrics.0.processed").getCount());
-    Assert.assertEquals(10L, mr.counter("simple.FixedFeed.0.processed").getCount());
-    Assert.assertEquals(10L, mr.counter("simple.OperatorWithMetrics.1.processed").getCount());
-    Assert.assertEquals(10L, mr.counter("simple.FixedFeed.1.processed").getCount());
+    Assert.assertEquals(20L, mr.meter("a.b").getCount());
+    Assert.assertEquals(20L, mr.meter("simple.OperatorWithMetrics.processed").getCount());
+    Assert.assertEquals(20L, mr.meter("simple.FixedFeed.processed").getCount());
+    Assert.assertEquals(10L, mr.meter("simple.OperatorWithMetrics.0.processed").getCount());
+    Assert.assertEquals(10L, mr.meter("simple.FixedFeed.0.processed").getCount());
+    Assert.assertEquals(10L, mr.meter("simple.OperatorWithMetrics.1.processed").getCount());
+    Assert.assertEquals(10L, mr.meter("simple.FixedFeed.1.processed").getCount());
+    
+    Assert.assertEquals(20, mr.meter("simple.driver.deque").getCount());
   }
 }
