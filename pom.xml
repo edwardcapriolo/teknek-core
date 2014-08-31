@@ -78,6 +78,12 @@
     			<version>0.0.4</version>
 		</dependency>
 
+		<dependency>
+			<groupId>io.teknek</groupId>
+			<artifactId>graphite-reporter</artifactId>
+			<version>0.0.1</version>
+		</dependency>
+
 		<!-- we may need this later <dependency> <groupId>org.eclipse.jetty</groupId> 
 			<artifactId>jetty-server</artifactId> <version>8.1.0.RC5</version> </dependency> -->
 

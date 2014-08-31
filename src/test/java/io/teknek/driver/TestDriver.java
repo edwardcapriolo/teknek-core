@@ -36,6 +36,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.codahale.metrics.MetricRegistry;
+
 
 public class TestDriver {
 
@@ -47,6 +49,7 @@ public class TestDriver {
     prop.put(FixedFeed.NUMBER_OF_ROWS, expectedRows);
     FixedFeed pf = new FixedFeed(prop);
     List<FeedPartition> parts = pf.getFeedPartitions();
+    parts.get(0).setMetricRegistry(new MetricRegistry());
     return parts.get(0);
   }
   
@@ -71,7 +74,7 @@ public class TestDriver {
         commitOp.set(true);
       }
     };
-    Driver root = new Driver(getPart(), fakeOp, fake, new CollectorProcessor(), 0);
+    Driver root = new Driver(getPart(), fakeOp, fake, new CollectorProcessor(), 0, new MetricRegistry(), "aplan");
     root.doOffsetInternal();
     Assert.assertTrue(commit.get());
     Assert.assertTrue(commitOp.get());
@@ -81,7 +84,7 @@ public class TestDriver {
   
   @Test
   public void aTest() throws InterruptedException {
-    Driver root = new Driver(getPart(), new Minus1Operator(), null, new CollectorProcessor(), 10);
+    Driver root = new Driver(getPart(), new Minus1Operator(), null, new CollectorProcessor(), 10, new MetricRegistry(), "aplan");
     root.initialize();
     root.getDriverNode().toString();
     root.getDriverNode().prettyPrint(1);
@@ -111,12 +114,13 @@ public class TestDriver {
     prop.put(FixedFeed.NUMBER_OF_ROWS, expectedRows);
     FixedFeed pf = new FixedFeed(prop);
     List<FeedPartition> parts = pf.getFeedPartitions();
+    parts.get(0).setMetricRegistry(new MetricRegistry());
     return parts.get(0);
   }
   
   @Test
   public void testFlowControl() throws InterruptedException {  
-    Driver root = new Driver(getPart1(), new Minus1Operator(), null, new CollectorProcessor(), 10);
+    Driver root = new Driver(getPart1(), new Minus1Operator(), null, new CollectorProcessor(), 10, new MetricRegistry(), "aplan");
     root.initialize();
     DriverNode child = new DriverNode(new Times2Operator(), new CollectorProcessor());
     root.getDriverNode().addChild(child);
@@ -129,7 +133,7 @@ public class TestDriver {
   
   @Test
   public void closeTest() throws InterruptedException {
-    Driver root = new Driver(getPart(), new CloseDetectOperator(), null, new CollectorProcessor(), 10);
+    Driver root = new Driver(getPart(), new CloseDetectOperator(), null, new CollectorProcessor(), 10, new MetricRegistry(), "aplan");
     root.initialize();
     Thread t = new Thread(root);
     t.start();

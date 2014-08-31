@@ -6,6 +6,8 @@ import java.util.Map;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.codahale.metrics.MetricRegistry;
+
 import io.teknek.feed.FeedPartition;
 import io.teknek.feed.FixedFeed;
 import io.teknek.feed.TestFixedFeed;
@@ -22,7 +24,7 @@ public class TestZookeeperOffsetStorage extends EmbeddedZooKeeperServer {
     Map props = MapBuilder.makeMap(ZookeeperOffsetStorage.ZK_CONNECT, zookeeperTestServer.getConnectString());
     FixedFeed pf = new FixedFeed(TestFixedFeed.buildFeedProps());
     List<FeedPartition> parts = pf.getFeedPartitions();
-    
+    parts.get(0).setMetricRegistry(new MetricRegistry());
     ZookeeperOffsetStorage zos = new ZookeeperOffsetStorage(parts.get(0),TestPlan.getPlan(), props);
 
     Assert.assertEquals("0", parts.get(0).getOffset());

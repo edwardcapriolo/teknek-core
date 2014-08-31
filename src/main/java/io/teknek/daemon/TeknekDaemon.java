@@ -17,6 +17,8 @@ package io.teknek.daemon;
 
 import io.teknek.datalayer.WorkerDao;
 import io.teknek.datalayer.WorkerDaoException;
+import io.teknek.graphite.reporter.CommonGraphiteReporter;
+import io.teknek.graphite.reporter.SimpleJmxReporter;
 import io.teknek.plan.Plan;
 
 import java.io.IOException;
@@ -40,6 +42,7 @@ import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.recipes.lock.LockListener;
 import org.apache.zookeeper.recipes.lock.WriteLock;
 
+import com.codahale.metrics.MetricRegistry;
 import com.google.common.annotations.VisibleForTesting;
 
 public class TeknekDaemon implements Watcher{
@@ -48,6 +51,10 @@ public class TeknekDaemon implements Watcher{
   public static final String ZK_SERVER_LIST = "teknek.zk.servers";
   public static final String MAX_WORKERS = "teknek.max.workers";
   public static final String DAEMON_ID = "teknek.daemon.id";
+  
+  public static final String GRAPHITE_HOST = "teknek.graphite.host";
+  public static final String GRAPHITE_PORT = "teknek.graphite.port";
+  public static final String GRAPHITE_CLUSTER = "teknek.graphite.cluster";
   
   private int maxWorkers = 4;
   private String myId;
@@ -58,6 +65,20 @@ public class TeknekDaemon implements Watcher{
   private boolean goOn = true;
   private String hostname;
   private CountDownLatch awaitConnection;
+  private MetricRegistry metricRegistry;
+  private SimpleJmxReporter jmxReporter;
+  private CommonGraphiteReporter graphiteReporter;
+  
+  /*
+   * <bean id="graphiteReporter" class="io.teknek.graphite.reporter.CommonGraphiteReporter"
+init-method="init">
+<constructor-arg ref="metricRegistry" />
+<constructor-arg value="monitor.use1.huffpo.net" />
+<constructor-arg value="2003" />
+<constructor-arg value="true" />
+<property name="clusterName" value="lighthouse-development" />
+</bean>
+   */
   
   public TeknekDaemon(Properties properties){
     this.properties = properties;
@@ -75,9 +96,19 @@ public class TeknekDaemon implements Watcher{
     } catch (UnknownHostException ex) {
       setHostname("unknown");
     }
+    metricRegistry = new MetricRegistry();
+    jmxReporter = new SimpleJmxReporter(metricRegistry, "teknek-core");
   }
   
   public void init() {
+    jmxReporter.init();
+    if (properties.get(GRAPHITE_HOST) != null){
+      graphiteReporter = new CommonGraphiteReporter(metricRegistry, 
+              properties.getProperty(GRAPHITE_HOST), 
+              Integer.parseInt(properties.getProperty(GRAPHITE_PORT)), true);
+      graphiteReporter.setClusterName(properties.getProperty(GRAPHITE_CLUSTER));
+      graphiteReporter.init();
+    }
     logger.info("Daemon id:" + myId);
     logger.info("Connecting to:" + properties.getProperty(ZK_SERVER_LIST));
     awaitConnection = new CountDownLatch(1);
@@ -324,6 +355,14 @@ public class TeknekDaemon implements Watcher{
   @VisibleForTesting
   void setHostname(String hostname) {
     this.hostname = hostname;
+  }
+  
+  public MetricRegistry getMetricRegistry() {
+    return metricRegistry;
+  }
+
+  public void setMetricRegistry(MetricRegistry metricRegistry) {
+    this.metricRegistry = metricRegistry;
   }
 
   public static void main (String [] args){

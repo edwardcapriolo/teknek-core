@@ -15,6 +15,9 @@ limitations under the License.
 */
 package io.teknek.driver;
 
+import com.codahale.metrics.Histogram;
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.MetricRegistry;
 import com.google.common.annotations.VisibleForTesting;
 
 import io.teknek.collector.CollectorProcessor;
@@ -37,19 +40,41 @@ public class Driver implements Runnable {
    */
   private int offsetCommitInterval;
   
+  private final Meter dequedByPlan;
+  private final Histogram timeToDequeue;
+  private final Meter processedByPlan;
+  private final Meter retriesByPlan;
+  private final Histogram timeToProcess;
+  
+  private final Meter dequedByPlanById;
+  private final Histogram timeToDequeueById;
+  private final Meter processedByPlanById;
+  private final Meter retriesByPlanById;
+  private final Histogram timeToProcessById;
+
   /**
    * 
    * @param fp feed partition to consume from
    * @param operator root operator of the driver
    * @param offsetStorage can be null if user does not wish to have offset storage
    */
-  public Driver(FeedPartition fp, Operator operator, OffsetStorage offsetStorage, CollectorProcessor collectorProcessor, int offsetCommitInterval ){
+  public Driver(FeedPartition fp, Operator operator, OffsetStorage offsetStorage, 
+          CollectorProcessor collectorProcessor, int offsetCommitInterval, MetricRegistry metricRegistry, String planName){
+    this.driverNode = new DriverNode(operator, collectorProcessor);
+    this.goOn = true;
     this.fp = fp;
-    driverNode = new DriverNode(operator, collectorProcessor);
     this.offsetStorage = offsetStorage;
-    goOn = true;
-    tuplesSeen = 0;
     this.offsetCommitInterval = offsetCommitInterval;
+    this.dequedByPlan = metricRegistry.meter(planName + ".driver." + "deque");
+    this.timeToDequeue = metricRegistry.histogram(planName + ".driver." + "dequeue_time_nanos");
+    this.processedByPlan = metricRegistry.meter(planName + ".driver." + "processed");
+    this.retriesByPlan = metricRegistry.meter(planName + ".driver." + "retries");
+    this.timeToProcess = metricRegistry.histogram(planName + ".driver." + "process_time_nanos");
+    this.dequedByPlanById = metricRegistry.meter(planName + ".driver." + fp.getPartitionId() + ".deque");
+    this.timeToDequeueById = metricRegistry.histogram(planName + ".driver." + fp.getPartitionId() + ".dequeue_time_nanos");
+    this.processedByPlanById = metricRegistry.meter(planName + ".driver." + fp.getPartitionId() + ".processed");
+    this.retriesByPlanById = metricRegistry.meter(planName + ".driver." + fp.getPartitionId() + ".retries");
+    this.timeToProcessById = metricRegistry.histogram(planName + ".driver." + fp.getPartitionId() + ".process_time_nanos"); 
   }
   
   public void initialize(){
@@ -64,16 +89,28 @@ public class Driver implements Runnable {
         break;
       }
       ITuple t = new Tuple();
+      long start = System.nanoTime();
       hasNext = fp.next(t);
+      timeToDequeue.update(System.nanoTime() - start);
+      timeToDequeueById.update(System.nanoTime() - start);
       tuplesSeen++;
+      dequedByPlan.mark(1);
+      dequedByPlanById.mark(1);
       int attempts = 0;
+      long processStart = System.nanoTime();
       while (attempts++ < driverNode.getCollectorProcessor().getTupleRetry() + 1) {
         try {
           driverNode.getOperator().handleTuple(t);
+          processedByPlan.mark();
+          processedByPlanById.mark();
           break;
         } catch (RuntimeException ex) {
+          retriesByPlan.mark();
+          retriesByPlan.mark();
         }
       }
+      timeToProcess.update(System.nanoTime() - processStart);
+      timeToProcessById.update(System.nanoTime() - processStart);
       maybeDoOffset();
       if (!hasNext) {
         break;

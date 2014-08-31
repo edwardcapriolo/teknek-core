@@ -38,6 +38,7 @@ import java.util.Map;
 
 import org.apache.log4j.Logger;
 
+import com.codahale.metrics.MetricRegistry;
 import com.google.common.base.Charsets;
 
 /**
@@ -56,9 +57,10 @@ public class DriverFactory {
    * @param plan
    * @return an uninitialized Driver
    */
-  public static Driver createDriver(FeedPartition feedPartition, Plan plan){
+  public static Driver createDriver(FeedPartition feedPartition, Plan plan, MetricRegistry metricRegistry){
+    populateFeedMetricInfo(plan, feedPartition, metricRegistry);
     OperatorDesc desc = plan.getRootOperator();
-    Operator oper = buildOperator(desc);
+    Operator oper = buildOperator(desc, metricRegistry, plan.getName(), feedPartition);
     OffsetStorage offsetStorage = null;
     OffsetStorageDesc offsetDesc = plan.getOffsetStorageDesc();
     if (offsetDesc != null && feedPartition.supportsOffsetManagement()){
@@ -71,20 +73,21 @@ public class DriverFactory {
     CollectorProcessor cp = new CollectorProcessor();
     cp.setTupleRetry(plan.getTupleRetry());
     int offsetCommitInterval = plan.getOffsetCommitInterval();
-    Driver driver = new Driver(feedPartition, oper, offsetStorage, cp, offsetCommitInterval);
-    recurseOperatorAndDriverNode(desc, driver.getDriverNode());
+    Driver driver = new Driver(feedPartition, oper, offsetStorage, cp, offsetCommitInterval, metricRegistry, plan.getName());
+    recurseOperatorAndDriverNode(desc, driver.getDriverNode(), metricRegistry, feedPartition);
     return driver;
   }
   
-  private static void recurseOperatorAndDriverNode(OperatorDesc desc, DriverNode node){
+  private static void recurseOperatorAndDriverNode(OperatorDesc desc, DriverNode node, 
+          MetricRegistry metricRegistry, FeedPartition feedPartition){
     List<OperatorDesc> children = desc.getChildren();
     for (OperatorDesc childDesc: children){
-      Operator oper = buildOperator(childDesc);
+      Operator oper = buildOperator(childDesc, metricRegistry, node.getOperator().getPath(), feedPartition);
       CollectorProcessor cp = new CollectorProcessor();
       cp.setTupleRetry(node.getCollectorProcessor().getTupleRetry());
       DriverNode childNode = new DriverNode(oper, cp);
       node.addChild(childNode);
-      recurseOperatorAndDriverNode(childDesc, childNode);
+      recurseOperatorAndDriverNode(childDesc, childNode, metricRegistry, feedPartition);
     }
   }
   
@@ -121,7 +124,7 @@ public class DriverFactory {
    * @param operatorDesc
    * @return
    */
-  public static Operator buildOperator(OperatorDesc operatorDesc) {
+  public static Operator buildOperator(OperatorDesc operatorDesc, MetricRegistry metricRegistry, String planPath, FeedPartition feedPartition) {
     Operator operator = null;
     NitFactory nitFactory = new NitFactory();
     NitDesc nitDesc = nitDescFromDynamic(operatorDesc);
@@ -135,6 +138,17 @@ public class DriverFactory {
       throw new RuntimeException(e);
     }
     operator.setProperties(operatorDesc.getParameters());
+    operator.setMetricRegistry(metricRegistry);
+    operator.setPartitionId(feedPartition.getPartitionId());
+    String myName = operatorDesc.getName();
+    if (myName == null){
+      myName = operatorDesc.getTheClass();
+      if (myName.indexOf(".") > -1){
+        String[] parts = myName.split("\\.");
+        myName = parts[parts.length-1];
+      }
+    }
+    operator.setPath(planPath + "." + myName);
     return operator;
   }
   
@@ -173,4 +187,16 @@ public class DriverFactory {
     return feed;
   }
   
+  private static void populateFeedMetricInfo(Plan p, FeedPartition fp, MetricRegistry r){
+    String myName = p.getFeedDesc().getName();
+    if (myName == null){
+      myName = p.getFeedDesc().getTheClass();
+      if (myName.indexOf(".") > -1){
+        String[] parts = myName.split("\\.");
+        myName = parts[parts.length-1];
+      }
+    }
+    fp.setPath(p.getName() + "." + myName);
+    fp.setMetricRegistry(r);
+  }
 }

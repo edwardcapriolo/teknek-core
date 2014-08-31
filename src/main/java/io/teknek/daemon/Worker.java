@@ -76,7 +76,7 @@ public class Worker implements Watcher {
     }
     FeedPartition toProcess = findPartitionToProcess(workerStatus, feed.getFeedPartitions());
     if (toProcess != null){
-      driver = DriverFactory.createDriver(toProcess, plan);
+      driver = DriverFactory.createDriver(toProcess, plan, parent.getMetricRegistry());
       driver.initialize(); 
       WorkerStatus iGotThis = new WorkerStatus(myId.toString(), toProcess.getPartitionId() , parent.getMyId());
       try {

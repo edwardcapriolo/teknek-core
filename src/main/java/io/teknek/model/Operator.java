@@ -17,13 +17,24 @@ package io.teknek.model;
 
 import java.util.Map;
 
+import com.codahale.metrics.MetricRegistry;
+
 /**
  * Represents processing logic. An operator takes a tuple as input and emits 0 or more tuples to the
  * output collector.
  * 
  */
 public abstract class Operator {
+  
+  /** A path used to locate the operator in the plan path. For example myplan.myop1.myop2 */
+  private String path;
 
+  /** Metric registry for metrics **/
+  private MetricRegistry metricRegistry;
+  
+  /** The partition of the feed we are bound to */
+  private String partitionId;
+  
   /**
    * Configuration properties that are passed at initialization to the operator
    */
@@ -89,4 +100,40 @@ public abstract class Operator {
     return properties;
   }
 
+  public MetricRegistry getMetricRegistry() {
+    return metricRegistry;
+  }
+
+  public void setMetricRegistry(MetricRegistry metricRegistry) {
+    this.metricRegistry = metricRegistry;
+  }
+
+  /**
+   * 
+   * @return the path to the operator in the form of plan.operator[.operator]...
+   */
+  public String getPath() {
+    return path;
+  }
+
+  /**
+   * End users should not need to set this as it set by the DriverFactory at construction
+   * @param path
+   */
+  public void setPath(String path) {
+    this.path = path;
+  }
+
+  public String getPartitionId() {
+    return partitionId;
+  }
+
+  /**
+   * End users should not need to set this as it set by the DriverFactory at construction
+   * @param path
+   */
+  public void setPartitionId(String partitionId) {
+    this.partitionId = partitionId;
+  }
+  
 }

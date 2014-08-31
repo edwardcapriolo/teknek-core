@@ -15,6 +15,8 @@ limitations under the License.
 */
 package io.teknek.feed;
 
+import com.codahale.metrics.MetricRegistry;
+
 import io.teknek.model.ITuple;
 
 /**
@@ -24,6 +26,16 @@ import io.teknek.model.ITuple;
  */
 public abstract class FeedPartition {
 
+  /**
+   * A interface to report metrics
+   */
+  private MetricRegistry metricRegistry;
+  
+  /**
+   * The path to this instance plan.feed
+   */
+  private String path;
+  
   /**
    * Reference to the parent of this partition
    */
@@ -89,5 +101,21 @@ public abstract class FeedPartition {
    * @param offset
    */
   public abstract void setOffset(String offset);
+
+  public MetricRegistry getMetricRegistry() {
+    return metricRegistry;
+  }
+
+  public void setMetricRegistry(MetricRegistry metricRegistry) {
+    this.metricRegistry = metricRegistry;
+  }
+
+  public String getPath() {
+    return path;
+  }
+
+  public void setPath(String path) {
+    this.path = path;
+  }
   
 }
