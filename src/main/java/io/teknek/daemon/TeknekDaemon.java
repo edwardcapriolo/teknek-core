@@ -69,17 +69,6 @@ public class TeknekDaemon implements Watcher{
   private SimpleJmxReporter jmxReporter;
   private CommonGraphiteReporter graphiteReporter;
   
-  /*
-   * <bean id="graphiteReporter" class="io.teknek.graphite.reporter.CommonGraphiteReporter"
-init-method="init">
-<constructor-arg ref="metricRegistry" />
-<constructor-arg value="monitor.use1.huffpo.net" />
-<constructor-arg value="2003" />
-<constructor-arg value="true" />
-<property name="clusterName" value="lighthouse-development" />
-</bean>
-   */
-  
   public TeknekDaemon(Properties properties){
     this.properties = properties;
     if (properties.containsKey(DAEMON_ID)){
