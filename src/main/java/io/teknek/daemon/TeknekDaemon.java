@@ -17,6 +17,7 @@ package io.teknek.daemon;
 
 import io.teknek.datalayer.WorkerDao;
 import io.teknek.datalayer.WorkerDaoException;
+import io.teknek.graphite.reporter.CommonGraphiteReporter;
 import io.teknek.graphite.reporter.SimpleJmxReporter;
 import io.teknek.plan.Plan;
 
@@ -51,6 +52,10 @@ public class TeknekDaemon implements Watcher{
   public static final String MAX_WORKERS = "teknek.max.workers";
   public static final String DAEMON_ID = "teknek.daemon.id";
   
+  public static final String GRAPHITE_HOST = "teknek.graphite.host";
+  public static final String GRAPHITE_PORT = "teknek.graphite.port";
+  public static final String GRAPHITE_CLUSTER = "teknek.graphite.cluster";
+  
   private int maxWorkers = 4;
   private String myId;
   private Properties properties;
@@ -62,6 +67,18 @@ public class TeknekDaemon implements Watcher{
   private CountDownLatch awaitConnection;
   private MetricRegistry metricRegistry;
   private SimpleJmxReporter jmxReporter;
+  private CommonGraphiteReporter graphiteReporter;
+  
+  /*
+   * <bean id="graphiteReporter" class="io.teknek.graphite.reporter.CommonGraphiteReporter"
+init-method="init">
+<constructor-arg ref="metricRegistry" />
+<constructor-arg value="monitor.use1.huffpo.net" />
+<constructor-arg value="2003" />
+<constructor-arg value="true" />
+<property name="clusterName" value="lighthouse-development" />
+</bean>
+   */
   
   public TeknekDaemon(Properties properties){
     this.properties = properties;
@@ -85,6 +102,13 @@ public class TeknekDaemon implements Watcher{
   
   public void init() {
     jmxReporter.init();
+    if (properties.get(GRAPHITE_HOST) != null){
+      graphiteReporter = new CommonGraphiteReporter(metricRegistry, 
+              properties.getProperty(GRAPHITE_HOST), 
+              Integer.parseInt(properties.getProperty(GRAPHITE_PORT)), true);
+      graphiteReporter.setClusterName(properties.getProperty(GRAPHITE_CLUSTER));
+      graphiteReporter.init();
+    }
     logger.info("Daemon id:" + myId);
     logger.info("Connecting to:" + properties.getProperty(ZK_SERVER_LIST));
     awaitConnection = new CountDownLatch(1);
