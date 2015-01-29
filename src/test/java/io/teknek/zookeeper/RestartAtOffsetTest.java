@@ -5,14 +5,11 @@ import java.util.Map;
 import java.util.Properties;
 
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import io.teknek.daemon.BeLoudOperator;
 import io.teknek.daemon.TeknekDaemon;
-import io.teknek.datalayer.WorkerDao;
 import io.teknek.feed.FixedFeed;
 import io.teknek.plan.FeedDesc;
 import io.teknek.plan.OffsetStorageDesc;
