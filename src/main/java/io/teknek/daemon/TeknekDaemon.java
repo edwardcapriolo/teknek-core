@@ -132,7 +132,7 @@ public class TeknekDaemon {
               try {
                 reKeeper.reconnect();
               } catch (IOException | InterruptedException e1) {
-                e1.printStackTrace();
+                logger.warn(e1);
               }
             }  
           } else {
