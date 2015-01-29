@@ -106,7 +106,7 @@ public class Driver implements Runnable {
           break;
         } catch (RuntimeException ex) {
           retriesByPlan.mark();
-          retriesByPlan.mark();
+          retriesByPlanById.mark();
         }
       }
       timeToProcess.update(System.nanoTime() - processStart);
