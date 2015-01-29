@@ -212,6 +212,7 @@ public class TeknekDaemon {
   }
   
   private void considerStarting(String child) throws WorkerDaoException {
+    boolean started = false;
     Plan plan = WorkerDao.findPlanByName(reKeeper.getZooKeeper(), child);
     if (!child.equals(plan.getName())){
       logger.warn(String.format("Node name %s is not the same is the json value %s will not start", child, plan.getName()));
@@ -267,6 +268,7 @@ public class TeknekDaemon {
           worker.init();
           worker.start();
           addWorkerToList(plan, worker);
+          started = true;
         } catch (RuntimeException e){
           throw new WorkerStartException(e);
         }    
@@ -279,6 +281,10 @@ public class TeknekDaemon {
       } catch (RuntimeException ex){
         logger.warn("Unable to unlock ", ex);
       }
+    }
+    if (started){
+      //sleep here to help spread workers a bit
+      try { Thread.sleep(1000); } catch (InterruptedException e) { e.printStackTrace(); }
     }
   }
   
