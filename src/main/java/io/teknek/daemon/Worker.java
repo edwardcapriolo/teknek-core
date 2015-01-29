@@ -32,6 +32,7 @@ import org.apache.log4j.Logger;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.Watcher.Event.EventType;
+import org.apache.zookeeper.Watcher.Event.KeeperState;
 import org.apache.zookeeper.ZooKeeper;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -60,7 +61,7 @@ public class Worker implements Watcher {
    */
   public void init(){
     try {
-      zk = new ZooKeeper(parent.getProperties().get(TeknekDaemon.ZK_SERVER_LIST).toString(), 100, this);
+      zk = new ZooKeeper(parent.getProperties().get(TeknekDaemon.ZK_SERVER_LIST).toString(), 30000, this);
     } catch (IOException e1) {
       throw new RuntimeException(e1);
     }
@@ -148,7 +149,11 @@ public class Worker implements Watcher {
   @Override
   public void process(WatchedEvent event) {
     logger.debug("recived event "+ event);
-    if (event.getType() == EventType.NodeDataChanged || event.getType() == EventType.NodeDeleted) {
+    if (event.getState() == KeeperState.Expired || event.getState() == KeeperState.Disconnected){
+      driver.setGoOn(false);
+      shutdown();
+    }
+    if (event.getType() == EventType.NodeDataChanged || event.getType() == EventType.NodeDeleted ) {
       driver.setGoOn(false);
       shutdown();
     }

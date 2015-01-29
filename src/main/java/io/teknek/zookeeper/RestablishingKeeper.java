@@ -22,9 +22,9 @@ public class RestablishingKeeper implements Watcher {
 
   public synchronized void reconnect() throws IOException, InterruptedException {
     if (zk !=null){
-      zk.close();
+      try { zk.close();} catch (InterruptedException ex){}
     }
-    zk = new ZooKeeper(hostList, 1000, this);
+    zk = new ZooKeeper(hostList, 30000, this);
     awaitConnection = new CountDownLatch(1);
     awaitConnection.await(10, TimeUnit.SECONDS);
     onReconnect(this.zk);
