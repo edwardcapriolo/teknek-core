@@ -10,8 +10,6 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.Watcher.Event.KeeperState;
 
-import com.codahale.metrics.Meter;
-
 public class RestablishingKeeper implements Watcher {
 
   private final static Logger LOGGER = Logger.getLogger(RestablishingKeeper.class.getName());
@@ -50,14 +48,10 @@ public class RestablishingKeeper implements Watcher {
   
   @Override
   public void process(WatchedEvent event) {
-    if (event.getState() == KeeperState.SyncConnected){
+    LOGGER.debug(event);
+    if (event.getState() == KeeperState.SyncConnected) {
       awaitConnection.countDown();
     } else if (event.getState() == KeeperState.Expired || event.getState() == KeeperState.Disconnected){
-      try {
-        zk.close();
-      } catch (InterruptedException ex) {
-        LOGGER.warn(ex);
-      }
       try {
         reconnect();
       } catch (IOException | InterruptedException ex) {
