@@ -35,13 +35,17 @@ public class RestablishingKeeper implements Watcher {
     zk = new ZooKeeper(hostList, 30000, this);
     awaitConnection = new CountDownLatch(1);
     awaitConnection.await(10, TimeUnit.SECONDS);
-    onReconnect(this.zk);
+    onReconnect(zk);
   }
   
   public ZooKeeper getZooKeeper(){
     return zk;
   }
   
+  /**
+   * On reconnect execute these operations
+   * @param zk
+   */
   public void onReconnect(ZooKeeper zk){
     
   }
@@ -63,6 +67,5 @@ public class RestablishingKeeper implements Watcher {
   public long getReestablished() {
     return reestablished;
   }
-  
   
 }
