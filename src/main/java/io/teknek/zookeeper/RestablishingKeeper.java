@@ -4,16 +4,21 @@ import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.log4j.Logger;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.Watcher.Event.KeeperState;
 
+import com.codahale.metrics.Meter;
+
 public class RestablishingKeeper implements Watcher {
 
+  private final static Logger LOGGER = Logger.getLogger(RestablishingKeeper.class.getName());
   private String hostList;
   private volatile ZooKeeper zk;
   private volatile CountDownLatch awaitConnection;
+  private long reestablished;
   
   public RestablishingKeeper(String hostList) throws IOException, InterruptedException {
     this.hostList = hostList;
@@ -21,8 +26,13 @@ public class RestablishingKeeper implements Watcher {
   }
 
   public synchronized void reconnect() throws IOException, InterruptedException {
-    if (zk !=null){
-      try { zk.close();} catch (InterruptedException ex){}
+    reestablished++;
+    if (zk != null) {
+      try {
+        zk.close();
+      } catch (InterruptedException ex) {
+        LOGGER.warn(ex);
+      }
     }
     zk = new ZooKeeper(hostList, 30000, this);
     awaitConnection = new CountDownLatch(1);
@@ -45,14 +55,20 @@ public class RestablishingKeeper implements Watcher {
     } else if (event.getState() == KeeperState.Expired || event.getState() == KeeperState.Disconnected){
       try {
         zk.close();
-      } catch (InterruptedException e) {
-        e.printStackTrace();
+      } catch (InterruptedException ex) {
+        LOGGER.warn(ex);
       }
       try {
         reconnect();
-      } catch (IOException | InterruptedException e) {
-        e.printStackTrace();
+      } catch (IOException | InterruptedException ex) {
+        LOGGER.warn(ex);
       }
     }
   }
+
+  public long getReestablished() {
+    return reestablished;
+  }
+  
+  
 }
