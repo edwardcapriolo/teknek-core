@@ -89,6 +89,12 @@ public class Driver implements Runnable {
   
   public void run(){
     LOGGER.debug(String.format("Driver : %s is entering run loop", this));
+    runInternal();
+    gracefulEnd();
+    LOGGER.debug(String.format("Driver : %s has reached a graceful end ", this));
+  }
+  
+  private void runInternal(){
     boolean hasNext = false;
     do {
       if (!goOn){
@@ -122,7 +128,6 @@ public class Driver implements Runnable {
         break;
       }
     } while (goOn);
-    gracefulEnd();
   }
   
   private void gracefulEnd(){
@@ -131,8 +136,8 @@ public class Driver implements Runnable {
       doOffsetInternal();
     }
     closeTopology();
-    LOGGER.debug(String.format("Driver : %s has reached a graceful end ", this ));
   }
+  
   /**
    * To do offset storage we let the topology drain itself out. Then we commit. 
    */

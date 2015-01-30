@@ -240,13 +240,14 @@ public class TeknekDaemon {
       }
       
     });
+    boolean hasLatch = false;
     try {
       boolean gotLock = l.lock(); 
       if (!gotLock){
         logger.debug("did not get lock");
         return;
       }
-      boolean hasLatch = c.await(3000, TimeUnit.MILLISECONDS);
+      hasLatch = c.await(3000, TimeUnit.MILLISECONDS);
       if (hasLatch){
         plan = WorkerDao.findPlanByName(reKeeper.getZooKeeper(), child);
         if (plan.isDisabled()){
@@ -275,7 +276,7 @@ public class TeknekDaemon {
       try {
         l.unlock();
       } catch (RuntimeException ex){
-        logger.warn("Unable to unlock ", ex);
+        logger.warn("Unable to unlock/cleanup. hadlock?" + hasLatch, ex);
       }
     }
   }
