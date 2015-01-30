@@ -40,6 +40,16 @@ public class DisablePlanTest extends EmbeddedZooKeeperServer {
     }
   }
   
+  private int totalRunningThreadsForPlan(Plan p){
+    int running = 0;
+    if (td.workerThreads.get(p) != null) {
+      running += td.workerThreads.get(p).size();
+    }
+    if (td1.workerThreads.get(p) != null) {
+      running += td1.workerThreads.get(p).size();
+    }
+    return running;
+  }
   @Test
   public void hangAround() throws InterruptedException {
     final Plan p = new Plan().withFeedDesc(
@@ -53,37 +63,16 @@ public class DisablePlanTest extends EmbeddedZooKeeperServer {
     Assert.assertNotNull(td.workerThreads);
     Assert.assertTrue(td.workerThreads.get(p) != null || td1.workerThreads.get(p) != null);
     
-    int running = 0;
-    if (td.workerThreads.get(p) != null) {
-      running += td.workerThreads.get(p).size();
-    }
-    if (td1.workerThreads.get(p) != null) {
-      running += td1.workerThreads.get(p).size();
-    }
-    Assert.assertEquals(1, running);
+    Assert.assertEquals(1, totalRunningThreadsForPlan(p));
     p.setDisabled(true);
     td.applyPlan(p);
     sleep(5000);
     
-    running = 0;
-    if (td.workerThreads.get(p) != null) {
-      running += td.workerThreads.get(p).size();
-    }
-    if (td1.workerThreads.get(p) != null) {
-      running += td1.workerThreads.get(p).size();
-    }
-    Assert.assertEquals(0, running);
+    Assert.assertEquals(0, totalRunningThreadsForPlan(p));
     p.setDisabled(false);
     td.applyPlan(p);
     sleep(5000);
-    running = 0;
-    if (td.workerThreads.get(p) != null) {
-      running += td.workerThreads.get(p).size();
-    }
-    if (td1.workerThreads.get(p) != null) {
-      running += td1.workerThreads.get(p).size();
-    }
-    Assert.assertEquals(1, running);
+    Assert.assertEquals(1, totalRunningThreadsForPlan(p));
     
     p.setDisabled(true);
     td.applyPlan(p);
