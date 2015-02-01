@@ -5,16 +5,13 @@ import java.util.Properties;
 import junit.framework.Assert;
 
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import io.teknek.feed.FixedFeed;
 import io.teknek.plan.FeedDesc;
 import io.teknek.plan.OperatorDesc;
 import io.teknek.plan.Plan;
-import io.teknek.test.WaitForCondition;
 import io.teknek.util.MapBuilder;
 import io.teknek.zookeeper.EmbeddedZooKeeperServer;
 
@@ -25,10 +22,8 @@ public class DisablePlanTest extends EmbeddedZooKeeperServer {
 
   @Before
   public void before() {
-    System.out.println("Starting "+this.getClass().getSimpleName() );
     Properties props = new Properties();
     props.put(TeknekDaemon.ZK_SERVER_LIST, zookeeperTestServer.getConnectString());
-    
     td = new TeknekDaemon(props);
     td.setRescanMillis(1000);
     td.init();
@@ -38,6 +33,23 @@ public class DisablePlanTest extends EmbeddedZooKeeperServer {
     td1.init();
   }
 
+  public void sleep(long millis){
+    try {
+      Thread.sleep(millis);
+    } catch (InterruptedException e) {
+    }
+  }
+  
+  private int totalRunningThreadsForPlan(Plan p){
+    int running = 0;
+    if (td.workerThreads.get(p) != null) {
+      running += td.workerThreads.get(p).size();
+    }
+    if (td1.workerThreads.get(p) != null) {
+      running += td1.workerThreads.get(p).size();
+    }
+    return running;
+  }
   @Test
   public void hangAround() throws InterruptedException {
     final Plan p = new Plan().withFeedDesc(
@@ -47,69 +59,25 @@ public class DisablePlanTest extends EmbeddedZooKeeperServer {
     p.setName("shutup");
     p.setMaxWorkers(1);
     td.applyPlan(p);
-
-    try {
-      Thread.sleep(2000);
-    } catch (InterruptedException e) {
-    }
+    sleep(2000);
     Assert.assertNotNull(td.workerThreads);
     Assert.assertTrue(td.workerThreads.get(p) != null || td1.workerThreads.get(p) != null);
     
-    int running = 0;
-    if (td.workerThreads.get(p) != null) {
-      running += td.workerThreads.get(p).size();
-    }
-    if (td1.workerThreads.get(p) != null) {
-      running += td1.workerThreads.get(p).size();
-    }
-    Assert.assertEquals(1, running);
-
-    
-    System.out.println("disabling");
+    Assert.assertEquals(1, totalRunningThreadsForPlan(p));
     p.setDisabled(true);
     td.applyPlan(p);
+    sleep(5000);
     
-    try {
-      Thread.sleep(5000);
-    } catch (InterruptedException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    }
-    
-    running = 0;
-    if (td.workerThreads.get(p) != null) {
-      running += td.workerThreads.get(p).size();
-    }
-    if (td1.workerThreads.get(p) != null) {
-      running += td1.workerThreads.get(p).size();
-    }
-    Assert.assertEquals(0, running);
-    
-    System.out.println("re-enabling");
+    Assert.assertEquals(0, totalRunningThreadsForPlan(p));
     p.setDisabled(false);
     td.applyPlan(p);
-    
-    try {
-      Thread.sleep(5000);
-    } catch (InterruptedException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    }
-    
-    running = 0;
-    if (td.workerThreads.get(p) != null) {
-      running += td.workerThreads.get(p).size();
-    }
-    if (td1.workerThreads.get(p) != null) {
-      running += td1.workerThreads.get(p).size();
-    }
-    Assert.assertEquals(1, running);
+    sleep(5000);
+    Assert.assertEquals(1, totalRunningThreadsForPlan(p));
     
     p.setDisabled(true);
     td.applyPlan(p);
     Thread.sleep(2000);
     td.deletePlan(p);
-    
     
   }
 
@@ -117,7 +85,6 @@ public class DisablePlanTest extends EmbeddedZooKeeperServer {
   public void after() {
     td.stop();
     td1.stop();
-    System.out.println("Ending "+this.getClass().getSimpleName() );
   }
 
 }

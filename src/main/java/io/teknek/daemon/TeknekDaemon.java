@@ -36,9 +36,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.log4j.Logger;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.Watcher.Event.KeeperState;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.recipes.lock.LockListener;
 import org.apache.zookeeper.recipes.lock.WriteLock;
@@ -212,7 +209,7 @@ public class TeknekDaemon {
   }
   
   private void considerStarting(String child) throws WorkerDaoException {
-    boolean started = false;
+    
     Plan plan = WorkerDao.findPlanByName(reKeeper.getZooKeeper(), child);
     if (!child.equals(plan.getName())){
       logger.warn(String.format("Node name %s is not the same is the json value %s will not start", child, plan.getName()));
@@ -243,13 +240,14 @@ public class TeknekDaemon {
       }
       
     });
+    boolean hasLatch = false;
     try {
       boolean gotLock = l.lock(); 
       if (!gotLock){
         logger.debug("did not get lock");
         return;
       }
-      boolean hasLatch = c.await(3000, TimeUnit.MILLISECONDS);
+      hasLatch = c.await(3000, TimeUnit.MILLISECONDS);
       if (hasLatch){
         plan = WorkerDao.findPlanByName(reKeeper.getZooKeeper(), child);
         if (plan.isDisabled()){
@@ -268,7 +266,6 @@ public class TeknekDaemon {
           worker.init();
           worker.start();
           addWorkerToList(plan, worker);
-          started = true;
         } catch (RuntimeException e){
           throw new WorkerStartException(e);
         }    
@@ -279,12 +276,8 @@ public class TeknekDaemon {
       try {
         l.unlock();
       } catch (RuntimeException ex){
-        logger.warn("Unable to unlock ", ex);
+        logger.warn("Unable to unlock/cleanup. hadlock?" + hasLatch, ex);
       }
-    }
-    if (started){
-      //sleep here to help spread workers a bit
-      try { Thread.sleep(1000); } catch (InterruptedException e) { e.printStackTrace(); }
     }
   }
   

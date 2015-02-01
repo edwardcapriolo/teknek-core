@@ -15,6 +15,8 @@ limitations under the License.
 */
 package io.teknek.driver;
 
+import org.apache.log4j.Logger;
+
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
@@ -30,6 +32,9 @@ import io.teknek.offsetstorage.OffsetStorage;
 
 /** driver consumes data from a feed partition and inserts it into operators */
 public class Driver implements Runnable {
+  
+  private final static Logger LOGGER = Logger.getLogger(Driver.class.getName());
+  
   private FeedPartition fp;
   private DriverNode driverNode;
   private volatile boolean goOn;
@@ -83,6 +88,13 @@ public class Driver implements Runnable {
   }
   
   public void run(){
+    LOGGER.debug(String.format("Driver : %s is entering run loop", this));
+    runInternal();
+    gracefulEnd();
+    LOGGER.debug(String.format("Driver : %s has reached a graceful end ", this));
+  }
+  
+  private void runInternal(){
     boolean hasNext = false;
     do {
       if (!goOn){
@@ -116,7 +128,6 @@ public class Driver implements Runnable {
         break;
       }
     } while (goOn);
-    gracefulEnd();
   }
   
   private void gracefulEnd(){
@@ -126,6 +137,7 @@ public class Driver implements Runnable {
     }
     closeTopology();
   }
+  
   /**
    * To do offset storage we let the topology drain itself out. Then we commit. 
    */
