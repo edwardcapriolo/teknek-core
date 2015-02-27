@@ -116,11 +116,9 @@ public class TeknekDaemon {
     new Thread(){
       public void run(){
         while (goOn){
-
           if (workerThreads.size() < maxWorkers) {
-            List<String> children;
             try {
-              children = WorkerDao.finalAllPlanNames(reKeeper.getZooKeeper());
+              List<String> children = WorkerDao.finalAllPlanNames(reKeeper.getZooKeeper());
               logger.debug("List of plans: " + children);
               for (String child: children){
                 considerStarting(child);
@@ -209,8 +207,11 @@ public class TeknekDaemon {
   }
   
   private void considerStarting(String child) throws WorkerDaoException {
-    
     Plan plan = WorkerDao.findPlanByName(reKeeper.getZooKeeper(), child);
+    if (plan == null){
+      logger.warn(String.format("Did not find a valid plan under node name %s", child));
+      return;
+    }
     if (!child.equals(plan.getName())){
       logger.warn(String.format("Node name %s is not the same is the json value %s will not start", child, plan.getName()));
       return;

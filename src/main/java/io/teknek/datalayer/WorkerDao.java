@@ -52,7 +52,7 @@ public class WorkerDao {
   
   private static final ObjectMapper MAPPER = new ObjectMapper();
   
-  private final static Logger logger = Logger.getLogger(WorkerDao.class.getName());
+  private final static Logger LOGGER = Logger.getLogger(WorkerDao.class.getName());
   
   /**
    * Base directory of the entire application
@@ -84,7 +84,7 @@ public class WorkerDao {
   public static void createZookeeperBase(ZooKeeper zk) throws WorkerDaoException {
     try {
       if (zk.exists(BASE_ZK, true) == null) {
-        logger.info("Creating " + BASE_ZK + " heirarchy");
+        LOGGER.info("Creating " + BASE_ZK + " heirarchy");
         zk.create(BASE_ZK, new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
       }
       if (zk.exists(WORKERS_ZK, false) == null) {
@@ -133,23 +133,39 @@ public class WorkerDao {
       throw new WorkerDaoException(e);
     }
   }
+  
   /**
-   * Search zookeeper for a plan with given name. 
+   * Search zookeeper for a plan with given name.
+   * 
    * @param zk
    * @param name
-   * @return
-   * @throws WorkerDaoException if plan does not exist or there is a problem deserializing it.
+   * @return null if plan not found, null if plan is corrupt data
+   * @throws WorkerDaoException
+   *           for zookeeper problems
    */
   public static Plan findPlanByName(ZooKeeper zk, String name) throws WorkerDaoException {
+    Stat planStat;
+    byte[] planBytes;
     try {
-      Stat s = zk.exists(PLANS_ZK + "/"+ name, false);
-      byte[] b = zk.getData(PLANS_ZK + "/" + name, false, s);
-      return deserializePlan(b);
-    } catch (IOException | KeeperException | InterruptedException e) {
+      planStat = zk.exists(PLANS_ZK + "/" + name, false);
+      if (planStat == null) {
+        return null;
+      }
+      planBytes = zk.getData(PLANS_ZK + "/" + name, false, planStat);
+    } catch (KeeperException | InterruptedException e) {
       throw new WorkerDaoException(e);
-    } 
+    }
+    Plan p = null;
+    try {
+      p = deserializePlan(planBytes);
+    } catch (JsonParseException | JsonMappingException e) {
+      LOGGER.warn("while parsing plan " + name, e);
+    } catch (IOException e) {
+      LOGGER.warn("while parsing plan " + name, e);
+    }
+    return p;
   }
-  
+
   public static Plan deserializePlan(byte[] b) throws JsonParseException, JsonMappingException,
           IOException {
     return MAPPER.readValue(b, Plan.class);
@@ -237,7 +253,7 @@ public class WorkerDao {
     String writeToPath = PLANS_ZK + "/" + plan.getName() + "/" + s.getWorkerUuid();
     try {
       zk.create(writeToPath, MAPPER.writeValueAsBytes(s), Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
-      logger.debug("Registered as ephemeral " + writeToPath);
+      LOGGER.debug("Registered as ephemeral " + writeToPath);
       zk.exists(PLANS_ZK+ "/" + plan.getName(), true);
     } catch (KeeperException | InterruptedException | IOException e) {
       throw new WorkerDaoException(e);
@@ -281,7 +297,7 @@ public class WorkerDao {
     try {
       String pathCreated = zk.create(readPath, serializeOperatorDesc(desc), Ids.OPEN_ACL_UNSAFE,
               CreateMode.PERSISTENT);
-      logger.debug("Created " + pathCreated);
+      LOGGER.debug("Created " + pathCreated);
     } catch (KeeperException | InterruptedException | IOException e) {
       throw new WorkerDaoException(e);
     }
@@ -294,7 +310,7 @@ public class WorkerDao {
     try {
       String pathCreated = zk.create(readPath, serializeFeedDesc(desc), Ids.OPEN_ACL_UNSAFE,
               CreateMode.PERSISTENT);
-      logger.debug("Created " + pathCreated);
+      LOGGER.debug("Created " + pathCreated);
     } catch (KeeperException | InterruptedException | IOException e) {
       throw new WorkerDaoException(e);
     }
@@ -334,14 +350,14 @@ public class WorkerDao {
       is = yc.getInputStream();
       b = om.readValue(is, Bundle.class);
     } catch (IOException e) {
-      logger.warn(e.getMessage());
+      LOGGER.warn(e.getMessage());
       throw new WorkerDaoException(e);
     } finally {
       if (is != null) {
         try {
           is.close();
         } catch (IOException e) {
-          logger.debug(e);
+          LOGGER.debug(e);
         }
       }
     }
@@ -379,7 +395,7 @@ public class WorkerDao {
     try {
       String planLock = LOCKS_ZK + "/" + plan.getName();
       if (zk.exists(planLock, false) == null) {
-        logger.debug("Creating " + planLock);
+        LOGGER.debug("Creating " + planLock);
         zk.create(planLock, new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
       }
     } catch (KeeperException | InterruptedException e) {
