@@ -53,27 +53,43 @@ public class WorkerDao {
   private static final ObjectMapper MAPPER = new ObjectMapper();
   
   private final static Logger LOGGER = Logger.getLogger(WorkerDao.class.getName());
-  
+    
   /**
    * Base directory of the entire application
    */
-  public static final String BASE_ZK = "/teknek";
+  public final String BASE_ZK;
   /**
    * ephemeral nodes for worker registration live here
    */
-  public static final String WORKERS_ZK = BASE_ZK + "/workers";
+  public final String WORKERS_ZK;
   /**
    * plans of stuff for workers to do live here
    */
-  public static final String PLANS_ZK = BASE_ZK + "/plans";
+  public final String PLANS_ZK;
   /**
    * saved feeds and operators
    */
-  public static final String SAVED_ZK = BASE_ZK + "/saved";
+  public final String SAVED_ZK;
   /**
    * Holds zk locks for choosing plans
    */
-  public static final String LOCKS_ZK = BASE_ZK + "/locks";
+  public final String LOCKS_ZK;
+  
+  public WorkerDao(){
+    BASE_ZK = "/teknek";
+    WORKERS_ZK = BASE_ZK + "/workers";
+    PLANS_ZK = BASE_ZK + "/plans";
+    SAVED_ZK = BASE_ZK + "/saved";
+    LOCKS_ZK = BASE_ZK + "/locks";
+  }
+  
+  public WorkerDao(String base){
+    BASE_ZK = base;
+    WORKERS_ZK = BASE_ZK + "/workers";
+    PLANS_ZK = BASE_ZK + "/plans";
+    SAVED_ZK = BASE_ZK + "/saved";
+    LOCKS_ZK = BASE_ZK + "/locks";
+  }
   
   /**
    * Creates all the required base directories in ZK for the application to run 
@@ -81,7 +97,7 @@ public class WorkerDao {
    * @throws KeeperException
    * @throws InterruptedException
    */
-  public static void createZookeeperBase(ZooKeeper zk) throws WorkerDaoException {
+  public void createZookeeperBase(ZooKeeper zk) throws WorkerDaoException {
     try {
       if (zk.exists(BASE_ZK, true) == null) {
         LOGGER.info("Creating " + BASE_ZK + " heirarchy");
@@ -112,7 +128,7 @@ public class WorkerDao {
    * @return 
    * @throws WorkerDaoException If there are zookeeper problems
    */
-  public static List<String> findWorkersWorkingOnPlan(ZooKeeper zk, Plan plan) throws WorkerDaoException{
+  public List<String> findWorkersWorkingOnPlan(ZooKeeper zk, Plan plan) throws WorkerDaoException{
     try {
       return zk.getChildren(PLANS_ZK + "/" + plan.getName(), false);
     } catch (KeeperException | InterruptedException e) {
@@ -126,7 +142,7 @@ public class WorkerDao {
    * @throws KeeperException
    * @throws InterruptedException
    */
-  public static List<String> finalAllPlanNames (ZooKeeper zk) throws WorkerDaoException {
+  public List<String> finalAllPlanNames (ZooKeeper zk) throws WorkerDaoException {
     try {
       return zk.getChildren(PLANS_ZK, false);
     } catch (KeeperException | InterruptedException e) {
@@ -143,7 +159,7 @@ public class WorkerDao {
    * @throws WorkerDaoException
    *           for zookeeper problems
    */
-  public static Plan findPlanByName(ZooKeeper zk, String name) throws WorkerDaoException {
+  public Plan findPlanByName(ZooKeeper zk, String name) throws WorkerDaoException {
     Stat planStat;
     byte[] planBytes;
     try {
@@ -187,9 +203,9 @@ public class WorkerDao {
    * @param zk
    * @throws WorkerDaoException if malformed plan or communication error with zookeeper
    */
-  public static void createOrUpdatePlan(Plan plan, ZooKeeper zk) throws WorkerDaoException {
+  public void createOrUpdatePlan(Plan plan, ZooKeeper zk) throws WorkerDaoException {
       try {
-        WorkerDao.createZookeeperBase(zk);
+        createZookeeperBase(zk);
         Stat s = zk.exists(PLANS_ZK+ "/" + plan.getName(), false);
         if (s != null) {
           zk.setData(PLANS_ZK+ "/" + plan.getName(), serializePlan(plan), s.getVersion());
@@ -208,7 +224,7 @@ public class WorkerDao {
    * @param d
    * @throws WorkerDaoException
    */
-  public static void createEphemeralNodeForDaemon(ZooKeeper zk, TeknekDaemon d) throws WorkerDaoException {
+  public void createEphemeralNodeForDaemon(ZooKeeper zk, TeknekDaemon d) throws WorkerDaoException {
     try {
       byte [] hostbytes = d.getHostname().getBytes(ENCODING);
       zk.create(WORKERS_ZK + "/" + d.getMyId(), hostbytes , Ids.OPEN_ACL_UNSAFE,
@@ -218,6 +234,13 @@ public class WorkerDao {
     }
   }
   
+  public List<String> findAllWorkers(ZooKeeper zk) throws WorkerDaoException {
+    try {
+      return zk.getChildren(WORKERS_ZK, false);
+    } catch (KeeperException | InterruptedException e) {
+      throw new WorkerDaoException(e);
+    }
+  }
   /**
    * Gets the status of each worker. The status contains the partitionId being consumed. This information
    * helps the next worker bind to an unconsumed partition
@@ -227,7 +250,7 @@ public class WorkerDao {
    * @return
    * @throws WorkerDaoException
    */
-  public static List<WorkerStatus> findAllWorkerStatusForPlan(ZooKeeper zk, Plan plan, List<String> otherWorkers) throws WorkerDaoException{
+  public List<WorkerStatus> findAllWorkerStatusForPlan(ZooKeeper zk, Plan plan, List<String> otherWorkers) throws WorkerDaoException{
     List<WorkerStatus> results = new ArrayList<WorkerStatus>();
     for (String worker : otherWorkers) {
       String lookAtPath = PLANS_ZK + "/" + plan.getName() + "/" + worker;
@@ -249,7 +272,7 @@ public class WorkerDao {
    * @param s
    * @throws WorkerDaoException 
    */
-  public static void registerWorkerStatus(ZooKeeper zk, Plan plan, WorkerStatus s) throws WorkerDaoException{
+  public void registerWorkerStatus(ZooKeeper zk, Plan plan, WorkerStatus s) throws WorkerDaoException{
     String writeToPath = PLANS_ZK + "/" + plan.getName() + "/" + s.getWorkerUuid();
     try {
       zk.create(writeToPath, MAPPER.writeValueAsBytes(s), Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
@@ -260,7 +283,7 @@ public class WorkerDao {
     }
   }
   
-  public static FeedDesc loadSavedFeedDesc(ZooKeeper zk, String group, String name) throws WorkerDaoException {
+  public FeedDesc loadSavedFeedDesc(ZooKeeper zk, String group, String name) throws WorkerDaoException {
     String readPath = SAVED_ZK + "/" + group + "-" + name + "-" + "feedDesc";
     try {
       Stat stat = zk.exists(readPath, false);
@@ -275,7 +298,7 @@ public class WorkerDao {
     }
   }
   
-  public static OperatorDesc loadSavedOperatorDesc(ZooKeeper zk, String group, String name) throws WorkerDaoException{
+  public OperatorDesc loadSavedOperatorDesc(ZooKeeper zk, String group, String name) throws WorkerDaoException{
     String readPath = SAVED_ZK + "/" + group + "-" + name + "-" + "operatorDesc";
     try {
       Stat stat = zk.exists(readPath, false);
@@ -290,7 +313,7 @@ public class WorkerDao {
     }
   }
   
-  public static void saveOperatorDesc(ZooKeeper zk, OperatorDesc desc, String group, String name)
+  public void saveOperatorDesc(ZooKeeper zk, OperatorDesc desc, String group, String name)
           throws WorkerDaoException {
     String readPath = SAVED_ZK + "/" + group + "-" + name + "-" + "operatorDesc";
     createZookeeperBase(zk);
@@ -303,7 +326,7 @@ public class WorkerDao {
     }
   }
 
-  public static void saveFeedDesc(ZooKeeper zk, FeedDesc desc, String group, String name)
+  public void saveFeedDesc(ZooKeeper zk, FeedDesc desc, String group, String name)
           throws WorkerDaoException {
     String readPath = SAVED_ZK + "/" + group + "-" + name + "-" + "feedDesc";
     createZookeeperBase(zk);
@@ -364,12 +387,12 @@ public class WorkerDao {
     return b;
   }
 
-  public static void saveBundle(ZooKeeper zk, Bundle b) throws WorkerDaoException {
+  public void saveBundle(ZooKeeper zk, Bundle b) throws WorkerDaoException {
     for (OperatorDesc o : b.getOperatorList() ){
-      WorkerDao.saveOperatorDesc(zk, o, b.getPackageName(), o.getName());
+      saveOperatorDesc(zk, o, b.getPackageName(), o.getName());
     }
     for (FeedDesc f: b.getFeedDescList()){
-      WorkerDao.saveFeedDesc(zk, f, b.getPackageName(), f.getName());
+      saveFeedDesc(zk, f, b.getPackageName(), f.getName());
     }
   }
   
@@ -379,7 +402,7 @@ public class WorkerDao {
    * @param p
    * @throws WorkerDaoException
    */
-  public static void deletePlan(ZooKeeper zk, Plan p) throws WorkerDaoException {
+  public void deletePlan(ZooKeeper zk, Plan p) throws WorkerDaoException {
     String planNode = PLANS_ZK + "/" + p.getName();
     try {
       Stat s = zk.exists(planNode, false);
@@ -391,7 +414,7 @@ public class WorkerDao {
     }
   }
   
-  public static void maybeCreatePlanLockDir(ZooKeeper zk, Plan plan) throws WorkerDaoException {
+  public void maybeCreatePlanLockDir(ZooKeeper zk, Plan plan) throws WorkerDaoException {
     try {
       String planLock = LOCKS_ZK + "/" + plan.getName();
       if (zk.exists(planLock, false) == null) {

@@ -49,10 +49,12 @@ public class TeknekDaemon {
   public static final String ZK_SERVER_LIST = "teknek.zk.servers";
   public static final String MAX_WORKERS = "teknek.max.workers";
   public static final String DAEMON_ID = "teknek.daemon.id";
+  public static final String ZK_BASE_DIR = "zk.base.dir";
   
   public static final String GRAPHITE_HOST = "teknek.graphite.host";
   public static final String GRAPHITE_PORT = "teknek.graphite.port";
   public static final String GRAPHITE_CLUSTER = "teknek.graphite.cluster";
+  
   
   private int maxWorkers = 4;
   private String myId;
@@ -65,6 +67,7 @@ public class TeknekDaemon {
   private SimpleJmxReporter jmxReporter;
   private CommonGraphiteReporter graphiteReporter;
   private RestablishingKeeper reKeeper;
+  private WorkerDao workerDao;
   
   public TeknekDaemon(Properties properties){
     this.properties = properties;
@@ -81,6 +84,11 @@ public class TeknekDaemon {
       setHostname(InetAddress.getLocalHost().getHostName());
     } catch (UnknownHostException ex) {
       setHostname("unknown");
+    }
+    if (properties.containsKey(ZK_BASE_DIR)){
+      workerDao = new WorkerDao(properties.getProperty(ZK_BASE_DIR));
+    } else {
+      workerDao = new WorkerDao();
     }
     metricRegistry = new MetricRegistry();
     jmxReporter = new SimpleJmxReporter(metricRegistry, "teknek-core");
@@ -102,8 +110,8 @@ public class TeknekDaemon {
       reKeeper = new RestablishingKeeper(t.properties.getProperty(ZK_SERVER_LIST)) {
         public void onReconnect(ZooKeeper zooKeeper){
           try {
-            WorkerDao.createZookeeperBase(zooKeeper);
-            WorkerDao.createEphemeralNodeForDaemon(zooKeeper, t);
+            workerDao.createZookeeperBase(zooKeeper);
+            workerDao.createEphemeralNodeForDaemon(zooKeeper, t);
           } catch (WorkerDaoException e) {
             throw new RuntimeException(e);
           }
@@ -118,7 +126,7 @@ public class TeknekDaemon {
         while (goOn){
           if (workerThreads.size() < maxWorkers) {
             try {
-              List<String> children = WorkerDao.finalAllPlanNames(reKeeper.getZooKeeper());
+              List<String> children = workerDao.finalAllPlanNames(reKeeper.getZooKeeper());
               logger.debug("List of plans: " + children);
               for (String child: children){
                 considerStarting(child);
@@ -147,16 +155,26 @@ public class TeknekDaemon {
   @VisibleForTesting
   public void applyPlan(Plan plan){
     try {
-      WorkerDao.createOrUpdatePlan(plan, reKeeper.getZooKeeper());
+      workerDao.createOrUpdatePlan(plan, reKeeper.getZooKeeper());
     } catch (WorkerDaoException e) {
       logger.warn("Failed writing/updating plan", e);
     }
   }
   
   @VisibleForTesting
+  public List<String> findAllWorkers(){
+    try {
+      return workerDao.findAllWorkers(reKeeper.getZooKeeper());
+    } catch (WorkerDaoException e) {
+      logger.warn(e);
+    }
+    return null;
+  }
+  
+  @VisibleForTesting
   public void deletePlan(Plan plan){
     try {
-      WorkerDao.deletePlan(reKeeper.getZooKeeper(), plan);
+      workerDao.deletePlan(reKeeper.getZooKeeper(), plan);
     } catch (WorkerDaoException e) {
       logger.warn("Failed deleting/updating plan", e);
     }
@@ -207,7 +225,7 @@ public class TeknekDaemon {
   }
   
   private void considerStarting(String child) throws WorkerDaoException {
-    Plan plan = WorkerDao.findPlanByName(reKeeper.getZooKeeper(), child);
+    Plan plan = workerDao.findPlanByName(reKeeper.getZooKeeper(), child);
     if (plan == null){
       logger.warn(String.format("Did not find a valid plan under node name %s", child));
       return;
@@ -216,17 +234,17 @@ public class TeknekDaemon {
       logger.warn(String.format("Node name %s is not the same is the json value %s will not start", child, plan.getName()));
       return;
     }
-    List<String> workerUuidsWorkingOnPlan = WorkerDao.findWorkersWorkingOnPlan(reKeeper.getZooKeeper(), plan);
+    List<String> workerUuidsWorkingOnPlan = workerDao.findWorkersWorkingOnPlan(reKeeper.getZooKeeper(), plan);
     if (alreadyAtMaxWorkersPerNode(plan, workerUuidsWorkingOnPlan, workerThreads.get(plan))){
       return;
     }
     if (!isPlanSane(plan)){
       return;
     } 
-    logger.debug("trying to acqure lock on " + WorkerDao.LOCKS_ZK + "/" + plan.getName());
-    WorkerDao.maybeCreatePlanLockDir(reKeeper.getZooKeeper(), plan);
+    logger.debug("trying to acqure lock on " + workerDao.LOCKS_ZK + "/" + plan.getName());
+    workerDao.maybeCreatePlanLockDir(reKeeper.getZooKeeper(), plan);
     final CountDownLatch c = new CountDownLatch(1);
-    WriteLock l = new WriteLock(reKeeper.getZooKeeper(), WorkerDao.LOCKS_ZK + "/" + plan.getName(), null);
+    WriteLock l = new WriteLock(reKeeper.getZooKeeper(), workerDao.LOCKS_ZK + "/" + plan.getName(), null);
     l.setLockListener(new LockListener(){
 
       @Override
@@ -250,12 +268,12 @@ public class TeknekDaemon {
       }
       hasLatch = c.await(3000, TimeUnit.MILLISECONDS);
       if (hasLatch){
-        plan = WorkerDao.findPlanByName(reKeeper.getZooKeeper(), child);
+        plan = workerDao.findPlanByName(reKeeper.getZooKeeper(), child);
         if (plan.isDisabled()){
           logger.debug("disabled "+ plan.getName());
           return;
         } 
-        List<String> workerUuids = WorkerDao.findWorkersWorkingOnPlan(reKeeper.getZooKeeper(), plan);
+        List<String> workerUuids = workerDao.findWorkersWorkingOnPlan(reKeeper.getZooKeeper(), plan);
         if (workerUuids.size() >= plan.getMaxWorkers()) {
           logger.debug("already running max children:" + workerUuids.size() + " planmax:"
                   + plan.getMaxWorkers() + " running:" + workerUuids);
@@ -331,6 +349,10 @@ public class TeknekDaemon {
 
   public void setMetricRegistry(MetricRegistry metricRegistry) {
     this.metricRegistry = metricRegistry;
+  }
+
+  public WorkerDao getWorkerDao() {
+    return workerDao;
   }
 
   public static void main (String [] args){

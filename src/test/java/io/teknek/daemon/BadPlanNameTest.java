@@ -62,15 +62,15 @@ public class BadPlanNameTest extends EmbeddedZooKeeperServer {
    * @param zk
    * @throws WorkerDaoException
    */
-  public static void createOrUpdateBadPlan(Plan plan, ZooKeeper zk) throws WorkerDaoException {
+  public static void createOrUpdateBadPlan(Plan plan, ZooKeeper zk, TeknekDaemon td) throws WorkerDaoException {
     try {
-      WorkerDao.createZookeeperBase(zk);
-      Stat s = zk.exists(WorkerDao.PLANS_ZK + "/" + plan.getName() + "a", false);
+      td.getWorkerDao().createZookeeperBase(zk);
+      Stat s = zk.exists(td.getWorkerDao().PLANS_ZK + "/" + plan.getName() + "a", false);
       if (s != null) {
-        zk.setData(WorkerDao.PLANS_ZK + "/" + plan.getName() + "a", WorkerDao.serializePlan(plan),
+        zk.setData(td.getWorkerDao().PLANS_ZK + "/" + plan.getName() + "a", WorkerDao.serializePlan(plan),
                 s.getVersion());
       } else {
-        zk.create(WorkerDao.PLANS_ZK + "/" + plan.getName() + "a", WorkerDao.serializePlan(plan),
+        zk.create(td.getWorkerDao().PLANS_ZK + "/" + plan.getName() + "a", WorkerDao.serializePlan(plan),
                 Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
       }
     } catch (KeeperException | InterruptedException e) {
@@ -89,7 +89,7 @@ public class BadPlanNameTest extends EmbeddedZooKeeperServer {
     
     DummyWatcher dw = new DummyWatcher();
     ZooKeeper zk = new ZooKeeper(zookeeperTestServer.getConnectString(),200, dw, false);
-    createOrUpdateBadPlan(p, zk);
+    createOrUpdateBadPlan(p, zk, td);
     try {
       Thread.sleep(5000);
     } catch (InterruptedException e) {
