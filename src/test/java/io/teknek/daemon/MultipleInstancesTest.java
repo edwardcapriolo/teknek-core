@@ -18,6 +18,7 @@ public class MultipleInstancesTest extends EmbeddedZooKeeperServer {
   
   private static void setupBase(){
     Properties props = new Properties();
+    props.put(TeknekDaemon.ZK_BASE_DIR, "/base");
     props.put(TeknekDaemon.ZK_SERVER_LIST, zookeeperTestServer.getConnectString());
     base = new TeknekDaemon(props);
     base.init();
@@ -39,7 +40,7 @@ public class MultipleInstancesTest extends EmbeddedZooKeeperServer {
   
   @Test
   public void test(){
-    Assert.assertEquals("/teknek/workers", base.getWorkerDao().WORKERS_ZK);
+    Assert.assertEquals("/base/workers", base.getWorkerDao().WORKERS_ZK);
     Assert.assertEquals(1, base.findAllWorkers().size());
     Assert.assertEquals("/alternate/workers", alternate.getWorkerDao().WORKERS_ZK);
     Assert.assertEquals(1, alternate.findAllWorkers().size());
