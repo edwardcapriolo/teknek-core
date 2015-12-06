@@ -61,7 +61,7 @@ public class TeknekDaemon {
   private Properties properties;
   private long rescanMillis = 5000;
   ConcurrentHashMap<Plan, List<Worker>> workerThreads;
-  private boolean goOn = true;
+  private volatile boolean goOn = true;
   private String hostname;
   private MetricRegistry metricRegistry;
   private SimpleJmxReporter jmxReporter;
