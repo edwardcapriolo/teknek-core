@@ -4,12 +4,14 @@ import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.zookeeper.ZooKeeper;
 import org.junit.Assert;
 import org.junit.Test;
 
+import io.teknek.daemon.TeknekDaemon;
 import io.teknek.daemon.WorkerStatus;
 import io.teknek.driver.TestDriverFactory;
 import io.teknek.plan.Bundle;
@@ -23,15 +25,16 @@ public class TestWorkerDao extends EmbeddedZooKeeperServer {
   
   @Test
   public void persistAndReadBack() throws IOException, InterruptedException, WorkerDaoException {
+    final TeknekDaemon td = new TeknekDaemon(new Properties());
     String group = "io.teknek";
     String name = "abc";
     DummyWatcher dw = new DummyWatcher();
     ZooKeeper zk = new ZooKeeper(zookeeperTestServer.getConnectString(), 1000, dw);
     dw.connectOrThrow(10, TimeUnit.SECONDS);
     OperatorDesc d = TestDriverFactory.buildGroovyOperatorDesc();
-    WorkerDao.createZookeeperBase(zk);
-    WorkerDao.saveOperatorDesc(zk, d, group, name);
-    OperatorDesc d1 = WorkerDao.loadSavedOperatorDesc(zk, group, name);
+    td.getWorkerDao().createZookeeperBase(zk);
+    td.getWorkerDao().saveOperatorDesc(zk, d, group, name);
+    OperatorDesc d1 = td.getWorkerDao().loadSavedOperatorDesc(zk, group, name);
     Assert.assertEquals(d1.getTheClass(), d.getTheClass());
     Assert.assertEquals(d1.getSpec(), d.getSpec());
     Assert.assertEquals(d1.getScript(), d.getScript());
@@ -48,36 +51,38 @@ public class TestWorkerDao extends EmbeddedZooKeeperServer {
   
   @Test
   public void readBundleAndAdd() throws IOException, InterruptedException, WorkerDaoException{
+    final TeknekDaemon td = new TeknekDaemon(new Properties());
     File f = new File("src/test/resources/bundle_io.teknek_itests1.0.0.json");
     Bundle b = WorkerDao.getBundleFromUrl(f.toURL());
     DummyWatcher dw = new DummyWatcher();
     ZooKeeper zk = new ZooKeeper(zookeeperTestServer.getConnectString(), 100, dw);
     dw.connectOrThrow(10, TimeUnit.SECONDS);
-    WorkerDao.saveBundle(zk, b);
-    OperatorDesc oDesc = WorkerDao.loadSavedOperatorDesc(zk, b.getPackageName(), "groovy_identity");
+    td.getWorkerDao().saveBundle(zk, b);
+    OperatorDesc oDesc = td.getWorkerDao().loadSavedOperatorDesc(zk, b.getPackageName(), "groovy_identity");
     Assert.assertEquals("groovy_identity", oDesc.getTheClass());
-    FeedDesc fDesc = WorkerDao.loadSavedFeedDesc(zk, b.getPackageName(), "GTry");
+    FeedDesc fDesc = td.getWorkerDao().loadSavedFeedDesc(zk, b.getPackageName(), "GTry");
     Assert.assertEquals("GTry", fDesc.getTheClass());
   }
  
   @Test
   public void persistStatus() throws WorkerDaoException, IOException, InterruptedException{
+    final TeknekDaemon td = new TeknekDaemon(new Properties());
     DummyWatcher dw = new DummyWatcher();
     ZooKeeper zk = new ZooKeeper(zookeeperTestServer.getConnectString(), 100, dw);
     dw.connectOrThrow(10, TimeUnit.SECONDS);
     WorkerStatus ws = new WorkerStatus("1","2","3");
     Plan p = new Plan().withName("persist");
-    WorkerDao.createZookeeperBase(zk);
-    WorkerDao.createOrUpdatePlan(p, zk);
-    WorkerDao.registerWorkerStatus(zk, p , ws);
-    List<WorkerStatus> statuses = WorkerDao.findAllWorkerStatusForPlan(zk, p, WorkerDao.findWorkersWorkingOnPlan(zk, p));
+    td.getWorkerDao().createZookeeperBase(zk);
+    td.getWorkerDao().createOrUpdatePlan(p, zk);
+    td.getWorkerDao().registerWorkerStatus(zk, p , ws);
+    List<WorkerStatus> statuses = td.getWorkerDao().findAllWorkerStatusForPlan(zk, p, td.getWorkerDao().findWorkersWorkingOnPlan(zk, p));
     Assert.assertEquals(1, statuses.size());
     Assert.assertEquals(ws.getTeknekDaemonId(), statuses.get(0).getTeknekDaemonId());
     Assert.assertEquals(ws.getFeedPartitionId(), statuses.get(0).getFeedPartitionId());
     Assert.assertEquals(ws.getWorkerUuid(), statuses.get(0).getWorkerUuid());
     zk.close();
     zk = new ZooKeeper(zookeeperTestServer.getConnectString(), 100, dw);
-    WorkerDao.deletePlan(zk, p);
+    td.getWorkerDao().deletePlan(zk, p);
     zk.close();
   }
 }

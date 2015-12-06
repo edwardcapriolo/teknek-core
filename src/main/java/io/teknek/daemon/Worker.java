@@ -68,7 +68,7 @@ public class Worker implements Watcher {
     Feed feed = DriverFactory.buildFeed(plan.getFeedDesc());
     List<WorkerStatus> workerStatus;
     try {
-      workerStatus = WorkerDao.findAllWorkerStatusForPlan(zk, plan, otherWorkers);
+      workerStatus = parent.getWorkerDao().findAllWorkerStatusForPlan(zk, plan, otherWorkers);
     } catch (WorkerDaoException e1) {
       throw new RuntimeException(e1);
     }
@@ -81,7 +81,7 @@ public class Worker implements Watcher {
       driver.initialize(); 
       WorkerStatus iGotThis = new WorkerStatus(myId.toString(), toProcess.getPartitionId() , parent.getMyId());
       try {
-        WorkerDao.registerWorkerStatus(zk, plan, iGotThis);
+        parent.getWorkerDao().registerWorkerStatus(zk, plan, iGotThis);
       } catch (WorkerDaoException e) {
         throw new RuntimeException(e);
       }
