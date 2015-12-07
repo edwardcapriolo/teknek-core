@@ -125,7 +125,7 @@ public class TeknekDaemon {
         while (goOn){
           if (workerThreads.size() < maxWorkers) {
             try {
-              List<String> children = workerDao.finalAllPlanNames(reKeeper.getCuratorFramework());
+              List<String> children = workerDao.finalAllPlanNames();
               logger.debug("List of plans: " + children);
               for (String child: children){
                 considerStarting(child);
@@ -220,7 +220,7 @@ public class TeknekDaemon {
   }
   
   private void considerStarting(String child) throws WorkerDaoException {
-    Plan plan = workerDao.findPlanByName(reKeeper.getZooKeeper(), child);
+    Plan plan = workerDao.findPlanByName(child);
     if (plan == null){
       logger.warn(String.format("Did not find a valid plan under node name %s", child));
       return;
@@ -263,7 +263,7 @@ public class TeknekDaemon {
       }
       hasLatch = c.await(3000, TimeUnit.MILLISECONDS);
       if (hasLatch){
-        plan = workerDao.findPlanByName(reKeeper.getZooKeeper(), child);
+        plan = workerDao.findPlanByName(child);
         if (plan.isDisabled()){
           logger.debug("disabled "+ plan.getName());
           return;

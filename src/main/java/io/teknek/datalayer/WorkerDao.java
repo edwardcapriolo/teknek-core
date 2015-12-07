@@ -161,9 +161,9 @@ public class WorkerDao {
    * @throws KeeperException
    * @throws InterruptedException
    */
-  public List<String> finalAllPlanNames (CuratorFramework framework) throws WorkerDaoException {
+  public List<String> finalAllPlanNames () throws WorkerDaoException {
     try {
-      return framework.getChildren().forPath(PLANS_ZK);
+      return this.framework.getCuratorFramework().getChildren().forPath(PLANS_ZK);
     } catch (Exception e) {
       throw new WorkerDaoException(e);
     }
@@ -172,22 +172,21 @@ public class WorkerDao {
   /**
    * Search zookeeper for a plan with given name.
    * 
-   * @param zk
    * @param name
    * @return null if plan not found, null if plan is corrupt data
    * @throws WorkerDaoException
    *           for zookeeper problems
    */
-  public Plan findPlanByName(ZooKeeper zk, String name) throws WorkerDaoException {
+  public Plan findPlanByName(String name) throws WorkerDaoException {
     Stat planStat;
     byte[] planBytes;
     try {
-      planStat = zk.exists(PLANS_ZK + "/" + name, false);
+      planStat = framework.getCuratorFramework().checkExists().forPath(PLANS_ZK + "/" + name);
       if (planStat == null) {
         return null;
       }
-      planBytes = zk.getData(PLANS_ZK + "/" + name, false, planStat);
-    } catch (KeeperException | InterruptedException e) {
+      planBytes = framework.getCuratorFramework().getData().forPath(PLANS_ZK + "/" + name);
+    } catch (Exception e) {
       throw new WorkerDaoException(e);
     }
     Plan p = null;
