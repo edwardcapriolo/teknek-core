@@ -29,7 +29,7 @@ public class TestWorkerDao extends EmbeddedZooKeeperServer {
     String group = "io.teknek";
     String name = "abc";
     DummyWatcher dw = new DummyWatcher();
-    ZooKeeper zk = new ZooKeeper(zookeeperTestServer.getConnectString(), 1000, dw);
+    ZooKeeper zk = new ZooKeeper(zookeeperTestServer.getInstanceSpec().getConnectString(), 1000, dw);
     dw.connectOrThrow(10, TimeUnit.SECONDS);
     OperatorDesc d = TestDriverFactory.buildGroovyOperatorDesc();
     td.getWorkerDao().createZookeeperBase(zk);
@@ -55,7 +55,7 @@ public class TestWorkerDao extends EmbeddedZooKeeperServer {
     File f = new File("src/test/resources/bundle_io.teknek_itests1.0.0.json");
     Bundle b = WorkerDao.getBundleFromUrl(f.toURL());
     DummyWatcher dw = new DummyWatcher();
-    ZooKeeper zk = new ZooKeeper(zookeeperTestServer.getConnectString(), 100, dw);
+    ZooKeeper zk = new ZooKeeper(zookeeperTestServer.getInstanceSpec().getConnectString(), 100, dw);
     dw.connectOrThrow(10, TimeUnit.SECONDS);
     td.getWorkerDao().saveBundle(zk, b);
     OperatorDesc oDesc = td.getWorkerDao().loadSavedOperatorDesc(zk, b.getPackageName(), "groovy_identity");
@@ -68,7 +68,7 @@ public class TestWorkerDao extends EmbeddedZooKeeperServer {
   public void persistStatus() throws WorkerDaoException, IOException, InterruptedException{
     final TeknekDaemon td = new TeknekDaemon(new Properties());
     DummyWatcher dw = new DummyWatcher();
-    ZooKeeper zk = new ZooKeeper(zookeeperTestServer.getConnectString(), 100, dw);
+    ZooKeeper zk = new ZooKeeper(zookeeperTestServer.getInstanceSpec().getConnectString(), 100, dw);
     dw.connectOrThrow(10, TimeUnit.SECONDS);
     WorkerStatus ws = new WorkerStatus("1","2","3");
     Plan p = new Plan().withName("persist");
@@ -81,7 +81,7 @@ public class TestWorkerDao extends EmbeddedZooKeeperServer {
     Assert.assertEquals(ws.getFeedPartitionId(), statuses.get(0).getFeedPartitionId());
     Assert.assertEquals(ws.getWorkerUuid(), statuses.get(0).getWorkerUuid());
     zk.close();
-    zk = new ZooKeeper(zookeeperTestServer.getConnectString(), 100, dw);
+    zk = new ZooKeeper(zookeeperTestServer.getInstanceSpec().getConnectString(), 100, dw);
     td.getWorkerDao().deletePlan(zk, p);
     zk.close();
   }

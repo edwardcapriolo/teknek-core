@@ -51,7 +51,7 @@ public class BadPlanNameTest extends EmbeddedZooKeeperServer {
   @Before
   public void setup() {
     Properties props = new Properties();
-    props.put(TeknekDaemon.ZK_SERVER_LIST, zookeeperTestServer.getConnectString());
+    props.put(TeknekDaemon.ZK_SERVER_LIST, zookeeperTestServer.getInstanceSpec().getConnectString());
     td = new TeknekDaemon(props);
     td.init();
   }
@@ -88,7 +88,8 @@ public class BadPlanNameTest extends EmbeddedZooKeeperServer {
     p.setMaxWorkers(1);
     
     DummyWatcher dw = new DummyWatcher();
-    ZooKeeper zk = new ZooKeeper(zookeeperTestServer.getConnectString(),200, dw, false);
+    ZooKeeper zk = new ZooKeeper(zookeeperTestServer.getInstanceSpec().getConnectString(), 200, dw,
+            false);
     createOrUpdateBadPlan(p, zk, td);
     try {
       Thread.sleep(5000);

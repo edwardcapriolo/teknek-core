@@ -29,11 +29,13 @@ import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.log4j.Logger;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.KeeperException.NodeExistsException;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.ZooDefs.Ids;
 import org.apache.zookeeper.data.Stat;
@@ -101,19 +103,29 @@ public class WorkerDao {
     try {
       if (zk.exists(BASE_ZK, true) == null) {
         LOGGER.info("Creating " + BASE_ZK + " heirarchy");
-        zk.create(BASE_ZK, new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+        try {
+          zk.create(BASE_ZK, new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+        } catch (NodeExistsException e){ }
       }
       if (zk.exists(WORKERS_ZK, false) == null) {
-        zk.create(WORKERS_ZK, new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+        try { 
+          zk.create(WORKERS_ZK, new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+        } catch (NodeExistsException e){ }
       }
       if (zk.exists(PLANS_ZK, true) == null) {
-        zk.create(PLANS_ZK, new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+        try {
+          zk.create(PLANS_ZK, new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+        } catch (NodeExistsException e){ }
       }
       if (zk.exists(SAVED_ZK, false) == null) {
-        zk.create(SAVED_ZK, new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+        try { 
+          zk.create(SAVED_ZK, new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+        } catch (NodeExistsException e){ }
       }
       if (zk.exists(LOCKS_ZK, false) == null) {
-        zk.create(LOCKS_ZK, new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+        try { 
+          zk.create(LOCKS_ZK, new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+        } catch (NodeExistsException e){ }
       }
     } catch (KeeperException | InterruptedException e) {
       throw new WorkerDaoException(e);
@@ -236,7 +248,12 @@ public class WorkerDao {
   
   public List<String> findAllWorkers(ZooKeeper zk) throws WorkerDaoException {
     try {
-      return zk.getChildren(WORKERS_ZK, false);
+      List<String> found = zk.getChildren(WORKERS_ZK, false);
+      if (found == null){
+        return Arrays.asList();
+      } else {
+        return found;
+      }
     } catch (KeeperException | InterruptedException e) {
       throw new WorkerDaoException(e);
     }

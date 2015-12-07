@@ -27,7 +27,7 @@ public class RestartAtOffsetTest extends EmbeddedZooKeeperServer {
   @Before
   public void setupD(){
     Properties props = new Properties();
-    props.put(TeknekDaemon.ZK_SERVER_LIST, zookeeperTestServer.getConnectString());
+    props.put(TeknekDaemon.ZK_SERVER_LIST, zookeeperTestServer.getInstanceSpec().getConnectString());
     td = new TeknekDaemon(props);
     td.init();
   }
@@ -41,7 +41,7 @@ public class RestartAtOffsetTest extends EmbeddedZooKeeperServer {
   
   @Test
   public void startAtOffset(){
-    Map zkOffset = MapBuilder.makeMap(ZookeeperOffsetStorage.ZK_CONNECT, zookeeperTestServer.getConnectString());
+    Map zkOffset = MapBuilder.makeMap(ZookeeperOffsetStorage.ZK_CONNECT, zookeeperTestServer.getInstanceSpec().getConnectString());
     p = new Plan()
       .withOffsetStorageDesc(new OffsetStorageDesc()
         .withOperatorClass(ZookeeperOffsetStorage.class.getName())

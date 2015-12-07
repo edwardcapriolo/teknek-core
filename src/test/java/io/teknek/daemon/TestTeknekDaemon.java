@@ -40,7 +40,7 @@ public class TestTeknekDaemon extends EmbeddedZooKeeperServer {
   @BeforeClass
   public static void setup(){
     Properties props = new Properties();
-    props.put(TeknekDaemon.ZK_SERVER_LIST, zookeeperTestServer.getConnectString());
+    props.put(TeknekDaemon.ZK_SERVER_LIST, zookeeperTestServer.getInstanceSpec().getConnectString());
     td = new TeknekDaemon(props);
     td.init();
   }

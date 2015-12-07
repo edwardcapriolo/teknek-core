@@ -1,11 +1,11 @@
 package io.teknek.zookeeper;
 
+import org.apache.curator.test.QuorumConfigBuilder;
+import org.apache.curator.test.TestingZooKeeperServer;
 import org.junit.BeforeClass;
 
-import com.netflix.curator.test.TestingServer;
-
 public class EmbeddedZooKeeperServer {
-  public static TestingServer zookeeperTestServer ;
+  public static TestingZooKeeperServer zookeeperTestServer ;
   
   /**
    * This class is named setupA because later on when setting up
@@ -16,7 +16,8 @@ public class EmbeddedZooKeeperServer {
   @BeforeClass
   public static void setupA() throws Exception{
     if (zookeeperTestServer == null){
-      zookeeperTestServer = new TestingServer();
+      zookeeperTestServer = new TestingZooKeeperServer(new QuorumConfigBuilder());
+      zookeeperTestServer.start();
     }
   }
 }

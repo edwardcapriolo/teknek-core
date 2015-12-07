@@ -21,7 +21,7 @@ public class TestZookeeperOffsetStorage extends EmbeddedZooKeeperServer {
    
   @Test
   public void test() {
-    Map props = MapBuilder.makeMap(ZookeeperOffsetStorage.ZK_CONNECT, zookeeperTestServer.getConnectString());
+    Map props = MapBuilder.makeMap(ZookeeperOffsetStorage.ZK_CONNECT, zookeeperTestServer.getInstanceSpec().getConnectString());
     FixedFeed pf = new FixedFeed(TestFixedFeed.buildFeedProps());
     List<FeedPartition> parts = pf.getFeedPartitions();
     parts.get(0).setMetricRegistry(new MetricRegistry());

@@ -34,6 +34,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.curator.framework.CuratorFramework;
 import org.apache.log4j.Logger;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooKeeper;
@@ -108,7 +109,8 @@ public class TeknekDaemon {
     final TeknekDaemon t = this;
     try {
       reKeeper = new RestablishingKeeper(t.properties.getProperty(ZK_SERVER_LIST)) {
-        public void onReconnect(ZooKeeper zooKeeper){
+        @Override
+        public void onReconnect(ZooKeeper zooKeeper, CuratorFramework framework) {
           try {
             workerDao.createZookeeperBase(zooKeeper);
             workerDao.createEphemeralNodeForDaemon(zooKeeper, t);
@@ -132,11 +134,7 @@ public class TeknekDaemon {
                 considerStarting(child);
               }
             } catch (WorkerDaoException e) {
-              try {
-                reKeeper.reconnect();
-              } catch (IOException | InterruptedException e1) {
-                logger.warn(e1);
-              }
+                logger.warn(e);
             }  
           } else {
             logger.debug("Will not attempt to start worker. Already at max workers " + workerThreads.size());
