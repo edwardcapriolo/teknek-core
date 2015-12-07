@@ -38,7 +38,7 @@ public class TestTeknekDaemon extends EmbeddedZooKeeperServer {
   static Plan p;
   
   @BeforeClass
-  public static void setup(){
+  public static void setup() throws InterruptedException {
     Properties props = new Properties();
     props.put(TeknekDaemon.ZK_SERVER_LIST, zookeeperTestServer.getInstanceSpec().getConnectString());
     td = new TeknekDaemon(props);

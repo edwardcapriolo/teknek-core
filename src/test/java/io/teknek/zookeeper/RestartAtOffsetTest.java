@@ -25,7 +25,7 @@ public class RestartAtOffsetTest extends EmbeddedZooKeeperServer {
   Plan p;
   
   @Before
-  public void setupD(){
+  public void setupD() throws InterruptedException {
     Properties props = new Properties();
     props.put(TeknekDaemon.ZK_SERVER_LIST, zookeeperTestServer.getInstanceSpec().getConnectString());
     td = new TeknekDaemon(props);

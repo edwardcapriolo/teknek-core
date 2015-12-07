@@ -21,6 +21,7 @@ import io.teknek.plan.Bundle;
 import io.teknek.plan.FeedDesc;
 import io.teknek.plan.OperatorDesc;
 import io.teknek.plan.Plan;
+import io.teknek.zookeeper.RestablishingKeeper;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -32,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.curator.framework.CuratorFramework;
 import org.apache.log4j.Logger;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -55,6 +57,8 @@ public class WorkerDao {
   private static final ObjectMapper MAPPER = new ObjectMapper();
   
   private final static Logger LOGGER = Logger.getLogger(WorkerDao.class.getName());
+  
+  private final RestablishingKeeper framework;
     
   /**
    * Base directory of the entire application
@@ -77,7 +81,8 @@ public class WorkerDao {
    */
   public final String LOCKS_ZK;
   
-  public WorkerDao(){
+  public WorkerDao(RestablishingKeeper framework){
+    this.framework= framework; 
     BASE_ZK = "/teknek";
     WORKERS_ZK = BASE_ZK + "/workers";
     PLANS_ZK = BASE_ZK + "/plans";
@@ -85,7 +90,8 @@ public class WorkerDao {
     LOCKS_ZK = BASE_ZK + "/locks";
   }
   
-  public WorkerDao(String base){
+  public WorkerDao(String base, RestablishingKeeper framework){
+    this.framework = framework;
     BASE_ZK = base;
     WORKERS_ZK = BASE_ZK + "/workers";
     PLANS_ZK = BASE_ZK + "/plans";
@@ -140,12 +146,13 @@ public class WorkerDao {
    * @return 
    * @throws WorkerDaoException If there are zookeeper problems
    */
-  public List<String> findWorkersWorkingOnPlan(ZooKeeper zk, Plan plan) throws WorkerDaoException{
+  public List<String> findWorkersWorkingOnPlan(Plan plan) throws WorkerDaoException{
     try {
-      return zk.getChildren(PLANS_ZK + "/" + plan.getName(), false);
-    } catch (KeeperException | InterruptedException e) {
+      return framework.getCuratorFramework().getChildren().forPath(PLANS_ZK + "/" + plan.getName());
+    } catch (Exception e) {
       throw new WorkerDaoException(e);
     }
+    
   }
   /**
    * 
@@ -154,10 +161,10 @@ public class WorkerDao {
    * @throws KeeperException
    * @throws InterruptedException
    */
-  public List<String> finalAllPlanNames (ZooKeeper zk) throws WorkerDaoException {
+  public List<String> finalAllPlanNames (CuratorFramework framework) throws WorkerDaoException {
     try {
-      return zk.getChildren(PLANS_ZK, false);
-    } catch (KeeperException | InterruptedException e) {
+      return framework.getChildren().forPath(PLANS_ZK);
+    } catch (Exception e) {
       throw new WorkerDaoException(e);
     }
   }

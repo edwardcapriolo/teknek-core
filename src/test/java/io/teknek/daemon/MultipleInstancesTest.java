@@ -15,7 +15,7 @@ public class MultipleInstancesTest extends EmbeddedZooKeeperServer {
   static TeknekDaemon base;
   static TeknekDaemon alternate;
   
-  private static void setupBase(){
+  private static void setupBase() throws InterruptedException {
     Properties props = new Properties();
     props.put(TeknekDaemon.ZK_BASE_DIR, "/base");
     props.put(TeknekDaemon.ZK_SERVER_LIST, zookeeperTestServer.getInstanceSpec().getConnectString());
@@ -23,7 +23,7 @@ public class MultipleInstancesTest extends EmbeddedZooKeeperServer {
     base.init();
   }
   
-  private static void setupAlternate(){
+  private static void setupAlternate() throws InterruptedException {
     Properties props = new Properties();
     props.put(TeknekDaemon.ZK_SERVER_LIST, zookeeperTestServer.getInstanceSpec().getConnectString());
     props.put(TeknekDaemon.ZK_BASE_DIR, "/alternate");
@@ -32,7 +32,7 @@ public class MultipleInstancesTest extends EmbeddedZooKeeperServer {
   }
   
   @BeforeClass
-  public static void setup(){
+  public static void setup() throws InterruptedException {
     setupBase();
     setupAlternate();
   }

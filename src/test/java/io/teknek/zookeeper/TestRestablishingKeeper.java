@@ -23,33 +23,24 @@ public class TestRestablishingKeeper extends EmbeddedZooKeeperServer {
     final TeknekDaemon td = new TeknekDaemon(p);
     int port = zookeeperTestServer.getInstanceSpec().getPort();
     System.out.println(zookeeperTestServer.getInstanceSpec().getConnectString());
-    RestablishingKeeper k = new RestablishingKeeper(zookeeperTestServer.getInstanceSpec().getConnectString()){
-      @Override
-      public void onReconnect(ZooKeeper zk, CuratorFramework framework){
-        try {
-          td.getWorkerDao().createZookeeperBase(zk);
-        } catch (WorkerDaoException e) {
-          throw new RuntimeException(e);
-        }
-      }
-    };
+    td.init();
     //Assert.assertEquals(1, k.getReestablished());
     Plan plan = new Plan().withName("abc");
-    td.getWorkerDao().createOrUpdatePlan(plan, k.getZooKeeper());
-    Assert.assertEquals(1, td.getWorkerDao().finalAllPlanNames(k.getZooKeeper()).size());
+    td.getWorkerDao().createOrUpdatePlan(plan, td.getReestablishingKeeper().getZooKeeper());
+    Assert.assertEquals(1, td.getWorkerDao().finalAllPlanNames(td.getReestablishingKeeper().getCuratorFramework()).size());
     zookeeperTestServer.stop();
     try {
-      td.getWorkerDao().finalAllPlanNames(k.getZooKeeper());
+      td.getWorkerDao().finalAllPlanNames(td.getReestablishingKeeper().getCuratorFramework());
       Assert.fail("Dao should have failed");
     } catch (Exception ex){ }
     try {
-      Assert.assertEquals(1, td.getWorkerDao().finalAllPlanNames(k.getZooKeeper()).size());
+      Assert.assertEquals(1, td.getWorkerDao().finalAllPlanNames(td.getReestablishingKeeper().getCuratorFramework()).size());
       Assert.fail("Dao should have failed");
     } catch (Exception ex){ }
     zookeeperTestServer.start();
     Thread.sleep(3000);
-    Assert.assertEquals(0, td.getWorkerDao().finalAllPlanNames(k.getZooKeeper()).size());
-    Assert.assertEquals(2, k.getReestablished());
+    Assert.assertEquals(0, td.getWorkerDao().finalAllPlanNames(td.getReestablishingKeeper().getCuratorFramework()).size());
+    Assert.assertEquals(2, td.getReestablishingKeeper().getReestablished());
     
   }
 }

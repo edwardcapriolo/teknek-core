@@ -21,7 +21,7 @@ public class DisablePlanTest extends EmbeddedZooKeeperServer {
   private TeknekDaemon td1 = null;
 
   @Before
-  public void before() {
+  public void before() throws InterruptedException {
     Properties props = new Properties();
     props.put(TeknekDaemon.ZK_SERVER_LIST, zookeeperTestServer.getInstanceSpec().getConnectString());
     td = new TeknekDaemon(props);

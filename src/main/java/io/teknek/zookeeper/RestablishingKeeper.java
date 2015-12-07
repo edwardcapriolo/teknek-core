@@ -24,7 +24,7 @@ public abstract class RestablishingKeeper {
   private CuratorFramework client;
   private AtomicLong reEstablished = new AtomicLong(0);
   
-  public RestablishingKeeper(String hostList) throws IOException, InterruptedException {
+  public RestablishingKeeper(String hostList)  {
     this.hostList = hostList;
     RetryPolicy retryPolicy = new ExponentialBackoffRetry(1000, 5);
     client = CuratorFrameworkFactory.newClient(hostList, retryPolicy);
@@ -42,9 +42,12 @@ public abstract class RestablishingKeeper {
           }
         }
       }});
+
+  }
+  public void init () throws InterruptedException {
     client.start();
     client.blockUntilConnected();
-  
+    System.out.println("initial connection");
   }
 
   /**
@@ -59,6 +62,10 @@ public abstract class RestablishingKeeper {
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
+  }
+  
+  public CuratorFramework getCuratorFramework(){
+    return this.client;
   }
   
   public long getReestablished(){

@@ -49,7 +49,7 @@ public class BadPlanNameTest extends EmbeddedZooKeeperServer {
   Plan p;
 
   @Before
-  public void setup() {
+  public void setup() throws InterruptedException {
     Properties props = new Properties();
     props.put(TeknekDaemon.ZK_SERVER_LIST, zookeeperTestServer.getInstanceSpec().getConnectString());
     td = new TeknekDaemon(props);
