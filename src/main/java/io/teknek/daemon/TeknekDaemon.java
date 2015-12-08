@@ -237,7 +237,7 @@ public class TeknekDaemon {
       return;
     } 
     logger.debug("trying to acqure lock on " + workerDao.LOCKS_ZK + "/" + plan.getName());
-    workerDao.maybeCreatePlanLockDir(reKeeper.getZooKeeper(), plan);
+    workerDao.maybeCreatePlanLockDir(plan);
     final CountDownLatch c = new CountDownLatch(1);
     WriteLock l = new WriteLock(reKeeper.getZooKeeper(), workerDao.LOCKS_ZK + "/" + plan.getName(), null);
     l.setLockListener(new LockListener(){

@@ -437,14 +437,19 @@ public class WorkerDao {
     }
   }
   
-  public void maybeCreatePlanLockDir(ZooKeeper zk, Plan plan) throws WorkerDaoException {
+  public void maybeCreatePlanLockDir(Plan plan) throws WorkerDaoException {
     try {
       String planLock = LOCKS_ZK + "/" + plan.getName();
-      if (zk.exists(planLock, false) == null) {
+      if (framework.getCuratorFramework().checkExists().forPath(planLock) == null) {
         LOGGER.debug("Creating " + planLock);
-        zk.create(planLock, new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+        try { 
+          framework.getCuratorFramework().create()
+            .withMode(CreateMode.PERSISTENT)
+            .withACL(Ids.OPEN_ACL_UNSAFE)
+            .forPath(planLock, new byte[0]);
+        } catch (NodeExistsException e){ }
       }
-    } catch (KeeperException | InterruptedException e) {
+    } catch (Exception e) {
       throw new WorkerDaoException(e);
     }
   }
