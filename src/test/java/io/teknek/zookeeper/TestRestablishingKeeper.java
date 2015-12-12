@@ -19,7 +19,7 @@ public class TestRestablishingKeeper extends EmbeddedZooKeeperServer {
     td.init();
     //Assert.assertEquals(1, k.getReestablished());
     Plan plan = new Plan().withName("abc");
-    td.getWorkerDao().createOrUpdatePlan(plan, td.getReestablishingKeeper().getZooKeeper());
+    td.getWorkerDao().createOrUpdatePlan(plan);
     Assert.assertEquals(1, td.getWorkerDao().finalAllPlanNames().size());
     zookeeperTestServer.stop();
     try {

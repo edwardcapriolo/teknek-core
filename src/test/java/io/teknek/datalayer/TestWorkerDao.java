@@ -61,7 +61,7 @@ public class TestWorkerDao extends EmbeddedZooKeeperServer {
     WorkerStatus ws = new WorkerStatus("1","2","3");
     Plan p = new Plan().withName("persist");
     td.getWorkerDao().createZookeeperBase();
-    td.getWorkerDao().createOrUpdatePlan(p, td.getReestablishingKeeper().getZooKeeper());
+    td.getWorkerDao().createOrUpdatePlan(p);
     td.getWorkerDao().registerWorkerStatus(td.getReestablishingKeeper().getZooKeeper(), p , ws);
     List<WorkerStatus> statuses = td.getWorkerDao()
             .findAllWorkerStatusForPlan(td.getReestablishingKeeper().getZooKeeper(), p, 

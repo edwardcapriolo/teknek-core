@@ -135,9 +135,9 @@ public class WorkerDao {
       return framework.getCuratorFramework().getChildren().forPath(PLANS_ZK + "/" + plan.getName());
     } catch (Exception e) {
       throw new WorkerDaoException(e);
-    }
-    
+    }   
   }
+  
   /**
    * 
    * @param zk
@@ -202,22 +202,23 @@ public class WorkerDao {
   /**
    * Creates or updates a plan in zookeeper.
    * @param plan
-   * @param zk
    * @throws WorkerDaoException if malformed plan or communication error with zookeeper
    */
-  public void createOrUpdatePlan(Plan plan, ZooKeeper zk) throws WorkerDaoException {
-      try {
-        createZookeeperBase();
-        Stat s = zk.exists(PLANS_ZK+ "/" + plan.getName(), false);
-        if (s != null) {
-          zk.setData(PLANS_ZK+ "/" + plan.getName(), serializePlan(plan), s.getVersion());
-        } else {
-          zk.create(PLANS_ZK+ "/" + plan.getName(), serializePlan(plan), Ids.OPEN_ACL_UNSAFE,
-                  CreateMode.PERSISTENT);
-        }
-      } catch (KeeperException | InterruptedException e) {
-        throw new WorkerDaoException(e);
+  public void createOrUpdatePlan(Plan plan) throws WorkerDaoException {
+    try {
+      createZookeeperBase();
+      Stat s = this.framework.getCuratorFramework().checkExists().forPath(PLANS_ZK);
+      if (s != null) {
+        framework.getCuratorFramework().setData().withVersion(s.getVersion())
+                .forPath(PLANS_ZK + "/" + plan.getName(), serializePlan(plan));
+      } else {
+        framework.getCuratorFramework().create().withMode(CreateMode.PERSISTENT)
+                .withACL(Ids.OPEN_ACL_UNSAFE)
+                .forPath(PLANS_ZK + "/" + plan.getName(), serializePlan(plan));
       }
+    } catch (Exception e) {
+      throw new WorkerDaoException(e);
+    }
   }
   
   /**

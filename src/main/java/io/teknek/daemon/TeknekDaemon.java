@@ -150,7 +150,7 @@ public class TeknekDaemon {
   @VisibleForTesting
   public void applyPlan(Plan plan){
     try {
-      workerDao.createOrUpdatePlan(plan, reKeeper.getZooKeeper());
+      workerDao.createOrUpdatePlan(plan);
     } catch (WorkerDaoException e) {
       logger.warn("Failed writing/updating plan", e);
     }
