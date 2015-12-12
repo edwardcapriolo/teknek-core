@@ -98,45 +98,28 @@ public class WorkerDao {
     LOCKS_ZK = BASE_ZK + "/locks";
   }
   
+  private void createPersistentEmptyNodeIfNotExist(String path) throws WorkerDaoException {
+    try {
+      if (framework.getCuratorFramework().checkExists().forPath(path) == null){
+        try {
+          framework.getCuratorFramework().create()
+          .withMode(CreateMode.PERSISTENT).withACL(Ids.OPEN_ACL_UNSAFE).forPath(path);
+        } catch (NodeExistsException e){ }
+      }
+    } catch(Exception ex){
+      throw new WorkerDaoException(ex);
+    }
+  }
+  
   /**
    * Creates all the required base directories in ZK for the application to run 
    */
   public void createZookeeperBase() throws WorkerDaoException {
-    
-    try {
-      if (framework.getCuratorFramework().checkExists().forPath(BASE_ZK) == null){
-        try {
-          framework.getCuratorFramework().create()
-          .withMode(CreateMode.PERSISTENT).withACL(Ids.OPEN_ACL_UNSAFE).forPath(BASE_ZK);
-        } catch (NodeExistsException e){ }
-      }
-      if (framework.getCuratorFramework().checkExists().forPath(WORKERS_ZK) == null){
-        try {
-          framework.getCuratorFramework().create()
-          .withMode(CreateMode.PERSISTENT).withACL(Ids.OPEN_ACL_UNSAFE).forPath(WORKERS_ZK);
-        } catch (NodeExistsException e){ }
-      }
-      if (framework.getCuratorFramework().checkExists().forPath(PLANS_ZK) == null){
-        try {
-          framework.getCuratorFramework().create()
-          .withMode(CreateMode.PERSISTENT).withACL(Ids.OPEN_ACL_UNSAFE).forPath(PLANS_ZK);
-        } catch (NodeExistsException e){ }
-      }
-      if (framework.getCuratorFramework().checkExists().forPath(SAVED_ZK) == null){
-        try {
-          framework.getCuratorFramework().create()
-          .withMode(CreateMode.PERSISTENT).withACL(Ids.OPEN_ACL_UNSAFE).forPath(SAVED_ZK);
-        } catch (NodeExistsException e){ }
-      }
-      if (framework.getCuratorFramework().checkExists().forPath(LOCKS_ZK) == null){
-        try {
-          framework.getCuratorFramework().create()
-          .withMode(CreateMode.PERSISTENT).withACL(Ids.OPEN_ACL_UNSAFE).forPath(LOCKS_ZK);
-        } catch (NodeExistsException e){ }
-      } 
-    } catch (Exception e) {
-      throw new WorkerDaoException(e);
-    }
+    createPersistentEmptyNodeIfNotExist(BASE_ZK);
+    createPersistentEmptyNodeIfNotExist(WORKERS_ZK);
+    createPersistentEmptyNodeIfNotExist(PLANS_ZK);
+    createPersistentEmptyNodeIfNotExist(SAVED_ZK);
+    createPersistentEmptyNodeIfNotExist(LOCKS_ZK);
   }
   
   /**
