@@ -91,7 +91,7 @@ public class TeknekDaemon {
       @Override
       public void onReconnect(ZooKeeper zooKeeper, CuratorFramework framework) {
         try {
-          workerDao.createZookeeperBase(zooKeeper);
+          workerDao.createZookeeperBase();
           workerDao.createEphemeralNodeForDaemon(zooKeeper, t);
         } catch (WorkerDaoException e) {
           throw new RuntimeException(e);

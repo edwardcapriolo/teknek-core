@@ -33,7 +33,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.apache.curator.framework.CuratorFramework;
 import org.apache.log4j.Logger;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -101,39 +100,41 @@ public class WorkerDao {
   
   /**
    * Creates all the required base directories in ZK for the application to run 
-   * @param zk
-   * @throws KeeperException
-   * @throws InterruptedException
    */
-  public void createZookeeperBase(ZooKeeper zk) throws WorkerDaoException {
+  public void createZookeeperBase() throws WorkerDaoException {
+    
     try {
-      if (zk.exists(BASE_ZK, true) == null) {
-        LOGGER.info("Creating " + BASE_ZK + " heirarchy");
+      if (framework.getCuratorFramework().checkExists().forPath(BASE_ZK) == null){
         try {
-          zk.create(BASE_ZK, new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+          framework.getCuratorFramework().create()
+          .withMode(CreateMode.PERSISTENT).withACL(Ids.OPEN_ACL_UNSAFE).forPath(BASE_ZK);
         } catch (NodeExistsException e){ }
       }
-      if (zk.exists(WORKERS_ZK, false) == null) {
-        try { 
-          zk.create(WORKERS_ZK, new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-        } catch (NodeExistsException e){ }
-      }
-      if (zk.exists(PLANS_ZK, true) == null) {
+      if (framework.getCuratorFramework().checkExists().forPath(WORKERS_ZK) == null){
         try {
-          zk.create(PLANS_ZK, new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+          framework.getCuratorFramework().create()
+          .withMode(CreateMode.PERSISTENT).withACL(Ids.OPEN_ACL_UNSAFE).forPath(WORKERS_ZK);
         } catch (NodeExistsException e){ }
       }
-      if (zk.exists(SAVED_ZK, false) == null) {
-        try { 
-          zk.create(SAVED_ZK, new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+      if (framework.getCuratorFramework().checkExists().forPath(PLANS_ZK) == null){
+        try {
+          framework.getCuratorFramework().create()
+          .withMode(CreateMode.PERSISTENT).withACL(Ids.OPEN_ACL_UNSAFE).forPath(PLANS_ZK);
         } catch (NodeExistsException e){ }
       }
-      if (zk.exists(LOCKS_ZK, false) == null) {
-        try { 
-          zk.create(LOCKS_ZK, new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+      if (framework.getCuratorFramework().checkExists().forPath(SAVED_ZK) == null){
+        try {
+          framework.getCuratorFramework().create()
+          .withMode(CreateMode.PERSISTENT).withACL(Ids.OPEN_ACL_UNSAFE).forPath(SAVED_ZK);
         } catch (NodeExistsException e){ }
       }
-    } catch (KeeperException | InterruptedException e) {
+      if (framework.getCuratorFramework().checkExists().forPath(LOCKS_ZK) == null){
+        try {
+          framework.getCuratorFramework().create()
+          .withMode(CreateMode.PERSISTENT).withACL(Ids.OPEN_ACL_UNSAFE).forPath(LOCKS_ZK);
+        } catch (NodeExistsException e){ }
+      } 
+    } catch (Exception e) {
       throw new WorkerDaoException(e);
     }
   }
@@ -223,7 +224,7 @@ public class WorkerDao {
    */
   public void createOrUpdatePlan(Plan plan, ZooKeeper zk) throws WorkerDaoException {
       try {
-        createZookeeperBase(zk);
+        createZookeeperBase();
         Stat s = zk.exists(PLANS_ZK+ "/" + plan.getName(), false);
         if (s != null) {
           zk.setData(PLANS_ZK+ "/" + plan.getName(), serializePlan(plan), s.getVersion());
@@ -339,7 +340,7 @@ public class WorkerDao {
   public void saveOperatorDesc(ZooKeeper zk, OperatorDesc desc, String group, String name)
           throws WorkerDaoException {
     String readPath = SAVED_ZK + "/" + group + "-" + name + "-" + "operatorDesc";
-    createZookeeperBase(zk);
+    createZookeeperBase();
     try {
       String pathCreated = zk.create(readPath, serializeOperatorDesc(desc), Ids.OPEN_ACL_UNSAFE,
               CreateMode.PERSISTENT);
@@ -352,7 +353,7 @@ public class WorkerDao {
   public void saveFeedDesc(ZooKeeper zk, FeedDesc desc, String group, String name)
           throws WorkerDaoException {
     String readPath = SAVED_ZK + "/" + group + "-" + name + "-" + "feedDesc";
-    createZookeeperBase(zk);
+    createZookeeperBase();
     try {
       String pathCreated = zk.create(readPath, serializeFeedDesc(desc), Ids.OPEN_ACL_UNSAFE,
               CreateMode.PERSISTENT);

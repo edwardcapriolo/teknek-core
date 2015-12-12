@@ -25,7 +25,7 @@ public class TestWorkerDao extends EmbeddedZooKeeperServer {
     String group = "io.teknek";
     String name = "abc";
     OperatorDesc d = TestDriverFactory.buildGroovyOperatorDesc();
-    td.getWorkerDao().createZookeeperBase(td.getReestablishingKeeper().getZooKeeper());
+    td.getWorkerDao().createZookeeperBase();
     td.getWorkerDao().saveOperatorDesc(td.getReestablishingKeeper().getZooKeeper(), d, group, name);
     OperatorDesc d1 = td.getWorkerDao().loadSavedOperatorDesc(td.getReestablishingKeeper().getZooKeeper(), group, name);
     Assert.assertEquals(d1.getTheClass(), d.getTheClass());
@@ -60,7 +60,7 @@ public class TestWorkerDao extends EmbeddedZooKeeperServer {
     final TeknekDaemon td = createUnitiDaemonWiredToThisZk();
     WorkerStatus ws = new WorkerStatus("1","2","3");
     Plan p = new Plan().withName("persist");
-    td.getWorkerDao().createZookeeperBase(td.getReestablishingKeeper().getZooKeeper());
+    td.getWorkerDao().createZookeeperBase();
     td.getWorkerDao().createOrUpdatePlan(p, td.getReestablishingKeeper().getZooKeeper());
     td.getWorkerDao().registerWorkerStatus(td.getReestablishingKeeper().getZooKeeper(), p , ws);
     List<WorkerStatus> statuses = td.getWorkerDao()

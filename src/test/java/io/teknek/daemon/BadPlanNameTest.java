@@ -64,7 +64,7 @@ public class BadPlanNameTest extends EmbeddedZooKeeperServer {
    */
   public static void createOrUpdateBadPlan(Plan plan, ZooKeeper zk, TeknekDaemon td) throws WorkerDaoException {
     try {
-      td.getWorkerDao().createZookeeperBase(zk);
+      td.getWorkerDao().createZookeeperBase();
       Stat s = zk.exists(td.getWorkerDao().PLANS_ZK + "/" + plan.getName() + "a", false);
       if (s != null) {
         zk.setData(td.getWorkerDao().PLANS_ZK + "/" + plan.getName() + "a", WorkerDao.serializePlan(plan),
