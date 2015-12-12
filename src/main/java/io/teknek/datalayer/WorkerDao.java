@@ -237,15 +237,15 @@ public class WorkerDao {
     }
   }
   
-  public List<String> findAllWorkers(ZooKeeper zk) throws WorkerDaoException {
+  public List<String> findAllWorkers() throws WorkerDaoException {
     try {
-      List<String> found = zk.getChildren(WORKERS_ZK, false);
+      List<String> found = this.framework.getCuratorFramework().getChildren().forPath(WORKERS_ZK);
       if (found == null){
         return Arrays.asList();
       } else {
         return found;
       }
-    } catch (KeeperException | InterruptedException e) {
+    } catch (Exception e) {
       throw new WorkerDaoException(e);
     }
   }

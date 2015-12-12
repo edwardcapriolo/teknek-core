@@ -159,7 +159,7 @@ public class TeknekDaemon {
   @VisibleForTesting
   public List<String> findAllWorkers(){
     try {
-      return workerDao.findAllWorkers(reKeeper.getZooKeeper());
+      return workerDao.findAllWorkers();
     } catch (WorkerDaoException e) {
       logger.warn(e);
     }
