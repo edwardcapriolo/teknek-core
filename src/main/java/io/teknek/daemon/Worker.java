@@ -15,7 +15,6 @@ limitations under the License.
 */
 package io.teknek.daemon;
 
-import io.teknek.datalayer.WorkerDao;
 import io.teknek.datalayer.WorkerDaoException;
 import io.teknek.driver.Driver;
 import io.teknek.driver.DriverFactory;
@@ -68,7 +67,7 @@ public class Worker implements Watcher {
     Feed feed = DriverFactory.buildFeed(plan.getFeedDesc());
     List<WorkerStatus> workerStatus;
     try {
-      workerStatus = parent.getWorkerDao().findAllWorkerStatusForPlan(zk, plan, otherWorkers);
+      workerStatus = parent.getWorkerDao().findAllWorkerStatusForPlan(plan, otherWorkers);
     } catch (WorkerDaoException e1) {
       throw new RuntimeException(e1);
     }

@@ -170,7 +170,7 @@ public class TeknekDaemon {
   @VisibleForTesting
   public void deletePlan(Plan plan){
     try {
-      workerDao.deletePlan(reKeeper.getZooKeeper(), plan);
+      workerDao.deletePlan(plan);
     } catch (WorkerDaoException e) {
       logger.warn("Failed deleting/updating plan", e);
     }

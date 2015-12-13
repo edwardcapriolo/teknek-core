@@ -259,15 +259,16 @@ public class WorkerDao {
    * @return
    * @throws WorkerDaoException
    */
-  public List<WorkerStatus> findAllWorkerStatusForPlan(ZooKeeper zk, Plan plan, List<String> otherWorkers) throws WorkerDaoException{
+  public List<WorkerStatus> findAllWorkerStatusForPlan(Plan plan, List<String> otherWorkers) throws WorkerDaoException{
     List<WorkerStatus> results = new ArrayList<WorkerStatus>();
     for (String worker : otherWorkers) {
       String lookAtPath = PLANS_ZK + "/" + plan.getName() + "/" + worker;
       try {
-        Stat stat = zk.exists(lookAtPath, false);
-        byte[] data = zk.getData(lookAtPath, false, stat);
+        Stat stat = framework.getCuratorFramework().checkExists().forPath(lookAtPath);
+        byte[] data = framework.getCuratorFramework().getData().storingStatIn(stat).forPath(lookAtPath);
+                //framework.getCuratorFramework().getData().forPath(lookAtPath);
         results.add(MAPPER.readValue(data, WorkerStatus.class));
-      } catch (KeeperException | InterruptedException | IOException e) {
+      } catch (Exception e) {
         throw new WorkerDaoException(e);
       }
     }
@@ -411,14 +412,17 @@ public class WorkerDao {
    * @param p
    * @throws WorkerDaoException
    */
-  public void deletePlan(ZooKeeper zk, Plan p) throws WorkerDaoException {
+  public void deletePlan(Plan p) throws WorkerDaoException {
     String planNode = PLANS_ZK + "/" + p.getName();
     try {
+      Stat s = framework.getCuratorFramework().checkExists().forPath(planNode);
+      framework.getCuratorFramework().delete().withVersion(s.getVersion()).forPath(planNode);
+      /*
       Stat s = zk.exists(planNode, false);
       if (s != null) {
         zk.delete(planNode, s.getVersion());
-      }
-    } catch (KeeperException | InterruptedException e) {
+      }*/
+    } catch (Exception e) {
       throw new WorkerDaoException(e);
     }
   }

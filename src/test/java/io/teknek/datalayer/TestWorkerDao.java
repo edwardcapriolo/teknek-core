@@ -64,14 +64,12 @@ public class TestWorkerDao extends EmbeddedZooKeeperServer {
     td.getWorkerDao().createOrUpdatePlan(p);
     td.getWorkerDao().registerWorkerStatus(td.getReestablishingKeeper().getZooKeeper(), p , ws);
     List<WorkerStatus> statuses = td.getWorkerDao()
-            .findAllWorkerStatusForPlan(td.getReestablishingKeeper().getZooKeeper(), p, 
-                    td.getWorkerDao().findWorkersWorkingOnPlan(p));
+            .findAllWorkerStatusForPlan(p, td.getWorkerDao().findWorkersWorkingOnPlan(p));
     Assert.assertEquals(1, statuses.size());
     Assert.assertEquals(ws.getTeknekDaemonId(), statuses.get(0).getTeknekDaemonId());
     Assert.assertEquals(ws.getFeedPartitionId(), statuses.get(0).getFeedPartitionId());
     Assert.assertEquals(ws.getWorkerUuid(), statuses.get(0).getWorkerUuid());
-  
-    td.getWorkerDao().deletePlan(td.getReestablishingKeeper().getZooKeeper(), p);
+    td.getWorkerDao().deletePlan(p);
     td.stop();
   }
 }
