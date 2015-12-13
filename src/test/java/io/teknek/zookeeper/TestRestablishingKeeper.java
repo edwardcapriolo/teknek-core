@@ -7,10 +7,11 @@ import io.teknek.plan.Plan;
 import junit.framework.Assert;
 
 import org.junit.Test;
+import org.junit.Ignore;
 
 public class TestRestablishingKeeper extends EmbeddedZooKeeperServer {
   
-  @Test
+  @Ignore
   public void showAutoRecovery() throws Exception {
     TeknekDaemon td = createDaemonWiredToThisZk();
     Thread.sleep(5000);
