@@ -35,6 +35,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.apache.log4j.Logger;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooKeeper;
@@ -238,59 +239,46 @@ public class TeknekDaemon {
     } 
     logger.debug("trying to acqure lock on " + workerDao.LOCKS_ZK + "/" + plan.getName());
     workerDao.maybeCreatePlanLockDir(plan);
-    final CountDownLatch c = new CountDownLatch(1);
-    WriteLock l = new WriteLock(reKeeper.getZooKeeper(), workerDao.LOCKS_ZK + "/" + plan.getName(), null);
-    l.setLockListener(new LockListener(){
-
-      @Override
-      public void lockAcquired() {
-        logger.debug(myId + " counting down");
-        c.countDown();
-      }
-
-      @Override
-      public void lockReleased() {
-        logger.debug(myId + " released");
-      }
-      
-    });
-    boolean hasLatch = false;
+    InterProcessMutex lock = new InterProcessMutex(reKeeper.getCuratorFramework(), workerDao.LOCKS_ZK + "/" + plan.getName());
     try {
-      boolean gotLock = l.lock(); 
+      boolean gotLock = false;
+      try {
+        gotLock = lock.acquire(3, TimeUnit.SECONDS);
+      } catch (Exception e) {
+        logger.warn("could not aquire lock", e);
+      }
       if (!gotLock){
         logger.debug("did not get lock");
         return;
       }
-      hasLatch = c.await(3000, TimeUnit.MILLISECONDS);
-      if (hasLatch){
-        plan = workerDao.findPlanByName(child);
-        if (plan.isDisabled()){
-          logger.debug("disabled "+ plan.getName());
-          return;
-        } 
-        List<String> workerUuids = workerDao.findWorkersWorkingOnPlan(plan);
-        if (workerUuids.size() >= plan.getMaxWorkers()) {
-          logger.debug("already running max children:" + workerUuids.size() + " planmax:"
+      plan = workerDao.findPlanByName(child);
+      if (plan.isDisabled()){
+        logger.debug("disabled "+ plan.getName());
+        return;
+      } 
+      List<String> workerUuids = workerDao.findWorkersWorkingOnPlan(plan);
+      if (workerUuids.size() >= plan.getMaxWorkers()) {
+        logger.debug("already running max children:" + workerUuids.size() + " planmax:"
                   + plan.getMaxWorkers() + " running:" + workerUuids);
           return;
-        } 
-        logger.debug("starting worker");
-        try {
-          Worker worker = new Worker(plan, workerUuids, this);
-          worker.init();
-          worker.start();
-          addWorkerToList(plan, worker);
-        } catch (RuntimeException e){
-          throw new WorkerStartException(e);
-        }    
-      }
-    } catch (KeeperException | InterruptedException | WorkerDaoException | WorkerStartException e) {
+      } 
+      logger.debug("starting worker");
+      try {
+        Worker worker = new Worker(plan, workerUuids, this);
+        worker.init();
+        worker.start();
+        addWorkerToList(plan, worker);
+      } catch (RuntimeException e){
+        throw new WorkerStartException(e);
+      }    
+      
+    } catch (WorkerDaoException | WorkerStartException e) {
       logger.warn("getting lock", e); 
     } finally {
       try {
-        l.unlock();
-      } catch (RuntimeException ex){
-        logger.warn("Unable to unlock/cleanup. hadlock?" + hasLatch, ex);
+        lock.release();
+      } catch (Exception e) {
+        logger.warn("Problems releasing lock", e);
       }
     }
   }

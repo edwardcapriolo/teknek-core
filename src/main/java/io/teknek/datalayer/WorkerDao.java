@@ -207,7 +207,7 @@ public class WorkerDao {
   public void createOrUpdatePlan(Plan plan) throws WorkerDaoException {
     try {
       createZookeeperBase();
-      Stat s = this.framework.getCuratorFramework().checkExists().forPath(PLANS_ZK);
+      Stat s = this.framework.getCuratorFramework().checkExists().forPath(PLANS_ZK + "/" + plan.getName());
       if (s != null) {
         framework.getCuratorFramework().setData().withVersion(s.getVersion())
                 .forPath(PLANS_ZK + "/" + plan.getName(), serializePlan(plan));
