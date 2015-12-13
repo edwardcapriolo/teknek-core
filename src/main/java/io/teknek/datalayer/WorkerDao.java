@@ -227,12 +227,13 @@ public class WorkerDao {
    * @param d
    * @throws WorkerDaoException
    */
-  public void createEphemeralNodeForDaemon(ZooKeeper zk, TeknekDaemon d) throws WorkerDaoException {
+  public void createEphemeralNodeForDaemon(TeknekDaemon d) throws WorkerDaoException {
     try {
       byte [] hostbytes = d.getHostname().getBytes(ENCODING);
-      zk.create(WORKERS_ZK + "/" + d.getMyId(), hostbytes , Ids.OPEN_ACL_UNSAFE,
-              CreateMode.EPHEMERAL);
-    } catch (KeeperException | InterruptedException | UnsupportedEncodingException e) {
+      framework.getCuratorFramework().create()
+      .withMode(CreateMode.EPHEMERAL).withACL(Ids.OPEN_ACL_UNSAFE).forPath(WORKERS_ZK + "/" + d.getMyId(),
+              hostbytes);
+    } catch (Exception e) {
       throw new WorkerDaoException(e);
     }
   }

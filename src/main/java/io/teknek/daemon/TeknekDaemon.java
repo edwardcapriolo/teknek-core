@@ -92,7 +92,7 @@ public class TeknekDaemon {
       public void onReconnect(ZooKeeper zooKeeper, CuratorFramework framework) {
         try {
           workerDao.createZookeeperBase();
-          workerDao.createEphemeralNodeForDaemon(zooKeeper, t);
+          workerDao.createEphemeralNodeForDaemon(t);
         } catch (WorkerDaoException e) {
           throw new RuntimeException(e);
         }

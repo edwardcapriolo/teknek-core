@@ -12,11 +12,8 @@ public class TestRestablishingKeeper extends EmbeddedZooKeeperServer {
   
   @Test
   public void showAutoRecovery() throws Exception {
-    Properties p = new Properties();
-    p.put(TeknekDaemon.ZK_SERVER_LIST, zookeeperTestServer.getInstanceSpec().getConnectString());
-    final TeknekDaemon td = new TeknekDaemon(p);
-    System.out.println(zookeeperTestServer.getInstanceSpec().getConnectString());
-    td.init();
+    TeknekDaemon td = createDaemonWiredToThisZk();
+    Thread.sleep(5000);
     //Assert.assertEquals(1, k.getReestablished());
     Plan plan = new Plan().withName("abc");
     td.getWorkerDao().createOrUpdatePlan(plan);
