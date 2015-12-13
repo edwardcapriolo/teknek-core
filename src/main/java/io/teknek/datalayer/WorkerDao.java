@@ -276,7 +276,8 @@ public class WorkerDao {
   }
   
   /**
-   * Registers an ephemeral node representing ownership of a feed partition
+   * Registers an ephemeral node representing ownership of a feed partition.
+   * Note we do not use curator here because we want a standard watch not from the main thread!
    * @param zk
    * @param plan
    * @param s
@@ -408,7 +409,6 @@ public class WorkerDao {
   
   /**
    * Note you should call stop the plan if it is running before deleting 
-   * @param zk
    * @param p
    * @throws WorkerDaoException
    */
@@ -417,11 +417,6 @@ public class WorkerDao {
     try {
       Stat s = framework.getCuratorFramework().checkExists().forPath(planNode);
       framework.getCuratorFramework().delete().withVersion(s.getVersion()).forPath(planNode);
-      /*
-      Stat s = zk.exists(planNode, false);
-      if (s != null) {
-        zk.delete(planNode, s.getVersion());
-      }*/
     } catch (Exception e) {
       throw new WorkerDaoException(e);
     }
