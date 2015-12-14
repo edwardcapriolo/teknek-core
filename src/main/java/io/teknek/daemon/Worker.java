@@ -161,5 +161,10 @@ public class Worker implements Watcher {
   public UUID getMyId() {
     return myId;
   }
+
+  @Override
+  public String toString() {
+    return "Worker [plan=" + plan + ", myId=" + myId + "]";
+  }
   
 }
