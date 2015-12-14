@@ -294,17 +294,17 @@ public class WorkerDao {
     }
   }
   
-  public FeedDesc loadSavedFeedDesc(ZooKeeper zk, String group, String name) throws WorkerDaoException {
+  public FeedDesc loadSavedFeedDesc(String group, String name) throws WorkerDaoException {
     String readPath = SAVED_ZK + "/" + group + "-" + name + "-" + "feedDesc";
     try {
-      Stat stat = zk.exists(readPath, false);
+      Stat stat = framework.getCuratorFramework().checkExists().forPath(readPath);
       if (stat != null){
-        byte [] data = zk.getData(readPath, false, stat);
+        byte [] data = framework.getCuratorFramework().getData().storingStatIn(stat).forPath(readPath);
         return deserializeFeedDesc(data);
       } else {
         throw new WorkerDaoException("not found in zk");
       }
-    } catch (KeeperException | InterruptedException | IOException e) {
+    } catch (Exception e) {
       throw new WorkerDaoException(e);
     }
   }

@@ -50,7 +50,7 @@ public class TestWorkerDao extends EmbeddedZooKeeperServer {
     td.getWorkerDao().saveBundle(td.getReestablishingKeeper().getZooKeeper(), b);
     OperatorDesc oDesc = td.getWorkerDao().loadSavedOperatorDesc(td.getReestablishingKeeper().getZooKeeper(), b.getPackageName(), "groovy_identity");
     Assert.assertEquals("groovy_identity", oDesc.getTheClass());
-    FeedDesc fDesc = td.getWorkerDao().loadSavedFeedDesc(td.getReestablishingKeeper().getZooKeeper(), b.getPackageName(), "GTry");
+    FeedDesc fDesc = td.getWorkerDao().loadSavedFeedDesc(b.getPackageName(), "GTry");
     Assert.assertEquals("GTry", fDesc.getTheClass());
     td.stop();
   }
