@@ -27,6 +27,7 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -121,8 +122,9 @@ public class TeknekDaemon {
       List<String> children = workerDao.finalAllPlanNames();
       logger.debug("List of plans: " + children);
       for (String child: children){
-        if (workerThreads.size() >= maxWorkers) {
-          logger.debug("Will not attempt to start worker. Already at max workers " + workerThreads.size());
+        int currentlyWorking = currentlyWorking();
+        if (currentlyWorking >= maxWorkers) {
+          logger.debug("Will not attempt to start worker. Already at max workers " + currentlyWorking);
           return;
         }
         considerStarting(child);
@@ -130,6 +132,19 @@ public class TeknekDaemon {
     } catch (WorkerDaoException e) {
       logger.warn(e);
     }  
+  }
+  
+  private int currentlyWorking(){
+    if (workerThreads == null){
+      return 0;
+    }
+    int total = 0;
+    for (Entry<Plan, List<Worker>> entry : workerThreads.entrySet()){
+      if (entry.getValue() != null){
+        total += entry.getValue().size();
+      }
+    }
+    return total;
   }
   
   public void start(){
