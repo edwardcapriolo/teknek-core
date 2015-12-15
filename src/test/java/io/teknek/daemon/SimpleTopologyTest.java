@@ -15,8 +15,6 @@ limitations under the License.
  */
 package io.teknek.daemon;
 
-import java.util.Properties;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -31,14 +29,11 @@ import io.teknek.zookeeper.EmbeddedZooKeeperServer;
 public class SimpleTopologyTest extends EmbeddedZooKeeperServer {
 
   TeknekDaemon td = null;
-
   Plan p;
 
   @Before
   public void setup() throws InterruptedException {
-    Properties props = new Properties();
-    props.put(TeknekDaemon.ZK_SERVER_LIST, zookeeperTestServer.getInstanceSpec().getConnectString());
-    td = new TeknekDaemon(props);
+    td = createUnitiDaemonWiredToThisZk();
     td.init();
   }
 
@@ -51,12 +46,7 @@ public class SimpleTopologyTest extends EmbeddedZooKeeperServer {
     p.setName("yell");
     p.setMaxWorkers(1);
     td.applyPlan(p);
-    try {
-      Thread.sleep(3000);
-    } catch (InterruptedException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    }
+    td.runOnce();
   }
 
   @After
