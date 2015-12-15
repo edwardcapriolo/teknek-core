@@ -27,10 +27,12 @@ public class DisablePlanTest extends EmbeddedZooKeeperServer {
     td = new TeknekDaemon(props);
     td.setRescanMillis(1000);
     td.init();
+    td.start();
     
     td1 = new TeknekDaemon(props);
     td1.setRescanMillis(1000);
     td1.init();
+    td1.start();
   }
 
   public void sleep(long millis){

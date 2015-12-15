@@ -27,6 +27,7 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -50,7 +51,6 @@ public class TeknekDaemon {
   public static final String GRAPHITE_HOST = "teknek.graphite.host";
   public static final String GRAPHITE_PORT = "teknek.graphite.port";
   public static final String GRAPHITE_CLUSTER = "teknek.graphite.cluster";
-  
   
   private int maxWorkers = 4;
   private String myId;
@@ -114,28 +114,47 @@ public class TeknekDaemon {
     logger.info("Daemon id:" + myId + " Connecting to:" + properties.getProperty(ZK_SERVER_LIST));
     reKeeper.init();
       
+  }
+  
+  @VisibleForTesting
+  public void runOnce(){
+    try {
+      List<String> children = workerDao.finalAllPlanNames();
+      logger.debug("List of plans: " + children);
+      for (String child: children){
+        int currentlyWorking = currentlyWorking();
+        if (currentlyWorking >= maxWorkers) {
+          logger.debug("Will not attempt to start worker. Already at max workers " + currentlyWorking);
+          return;
+        }
+        considerStarting(child);
+      }
+    } catch (WorkerDaoException e) {
+      logger.warn(e);
+    }  
+  }
+  
+  private int currentlyWorking(){
+    if (workerThreads == null){
+      return 0;
+    }
+    int total = 0;
+    for (Entry<Plan, List<Worker>> entry : workerThreads.entrySet()){
+      if (entry.getValue() != null){
+        total += entry.getValue().size();
+      }
+    }
+    return total;
+  }
+  
+  public void start(){
     new Thread(){
       public void run(){
         while (goOn){
-          if (workerThreads.size() < maxWorkers) {
-            try {
-              List<String> children = workerDao.finalAllPlanNames();
-              logger.debug("List of plans: " + children);
-              for (String child: children){
-                considerStarting(child);
-              }
-            } catch (WorkerDaoException e) {
-                logger.warn(e);
-            }  
-          } else {
-            logger.debug("Will not attempt to start worker. Already at max workers " + workerThreads.size());
-          }
-
+          runOnce();
           try {
             Thread.sleep(rescanMillis);
-          } catch (InterruptedException e) {
-            logger.warn(e);
-          }
+          } catch (InterruptedException e) { }
         }
       }
     }.start();
@@ -338,5 +357,6 @@ public class TeknekDaemon {
   public static void main (String [] args) throws InterruptedException {
     TeknekDaemon td = new TeknekDaemon(System.getProperties());
     td.init();
+    td.start();
   }  
 }
