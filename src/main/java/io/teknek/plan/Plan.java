@@ -133,6 +133,11 @@ public class Plan {
     result = prime * result + ((name == null) ? 0 : name.hashCode());
     return result;
   }
+  
+  @Override
+  public String toString() {
+    return "Plan [name=" + name + "]";
+  }
 
   @Override
   public boolean equals(Object obj) {

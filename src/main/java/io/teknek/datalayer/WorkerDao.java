@@ -21,19 +21,21 @@ import io.teknek.plan.Bundle;
 import io.teknek.plan.FeedDesc;
 import io.teknek.plan.OperatorDesc;
 import io.teknek.plan.Plan;
+import io.teknek.zookeeper.RestablishingKeeper;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.log4j.Logger;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.KeeperException.NodeExistsException;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.ZooDefs.Ids;
 import org.apache.zookeeper.data.Stat;
@@ -53,6 +55,8 @@ public class WorkerDao {
   private static final ObjectMapper MAPPER = new ObjectMapper();
   
   private final static Logger LOGGER = Logger.getLogger(WorkerDao.class.getName());
+  
+  private final RestablishingKeeper framework;
     
   /**
    * Base directory of the entire application
@@ -75,66 +79,73 @@ public class WorkerDao {
    */
   public final String LOCKS_ZK;
   
-  public WorkerDao(){
+  public final String PLAN_WORKERS_ZK;
+  
+  public WorkerDao(RestablishingKeeper framework){
+    this.framework= framework; 
     BASE_ZK = "/teknek";
     WORKERS_ZK = BASE_ZK + "/workers";
     PLANS_ZK = BASE_ZK + "/plans";
     SAVED_ZK = BASE_ZK + "/saved";
     LOCKS_ZK = BASE_ZK + "/locks";
+    PLAN_WORKERS_ZK = BASE_ZK + "/plan-workers";
   }
   
-  public WorkerDao(String base){
+  public WorkerDao(String base, RestablishingKeeper framework){
+    this.framework = framework;
     BASE_ZK = base;
     WORKERS_ZK = BASE_ZK + "/workers";
     PLANS_ZK = BASE_ZK + "/plans";
     SAVED_ZK = BASE_ZK + "/saved";
     LOCKS_ZK = BASE_ZK + "/locks";
+    PLAN_WORKERS_ZK = BASE_ZK + "/plan-workers";
+  }
+  
+  private void createPersistentEmptyNodeIfNotExist(String path) throws WorkerDaoException {
+    try {
+      if (framework.getCuratorFramework().checkExists().forPath(path) == null){
+        try {
+          framework.getCuratorFramework().create()
+          .withMode(CreateMode.PERSISTENT).withACL(Ids.OPEN_ACL_UNSAFE).forPath(path);
+        } catch (NodeExistsException e){ }
+      }
+    } catch(Exception ex){
+      LOGGER.warn(ex);
+      throw new WorkerDaoException(ex);
+    }
   }
   
   /**
    * Creates all the required base directories in ZK for the application to run 
-   * @param zk
-   * @throws KeeperException
-   * @throws InterruptedException
    */
-  public void createZookeeperBase(ZooKeeper zk) throws WorkerDaoException {
-    try {
-      if (zk.exists(BASE_ZK, true) == null) {
-        LOGGER.info("Creating " + BASE_ZK + " heirarchy");
-        zk.create(BASE_ZK, new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-      }
-      if (zk.exists(WORKERS_ZK, false) == null) {
-        zk.create(WORKERS_ZK, new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-      }
-      if (zk.exists(PLANS_ZK, true) == null) {
-        zk.create(PLANS_ZK, new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-      }
-      if (zk.exists(SAVED_ZK, false) == null) {
-        zk.create(SAVED_ZK, new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-      }
-      if (zk.exists(LOCKS_ZK, false) == null) {
-        zk.create(LOCKS_ZK, new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-      }
-    } catch (KeeperException | InterruptedException e) {
-      throw new WorkerDaoException(e);
-    }
+  public void createZookeeperBase() throws WorkerDaoException {
+    createPersistentEmptyNodeIfNotExist(BASE_ZK);
+    createPersistentEmptyNodeIfNotExist(WORKERS_ZK);
+    createPersistentEmptyNodeIfNotExist(PLANS_ZK);
+    createPersistentEmptyNodeIfNotExist(SAVED_ZK);
+    createPersistentEmptyNodeIfNotExist(LOCKS_ZK);
+    createPersistentEmptyNodeIfNotExist(PLAN_WORKERS_ZK);
   }
   
   /**
    * Returns the node name of all the ephemeral nodes under a plan. This is effectively who is
    * working on the plan.
-   * @param zk
    * @param plan
    * @return 
    * @throws WorkerDaoException If there are zookeeper problems
    */
-  public List<String> findWorkersWorkingOnPlan(ZooKeeper zk, Plan plan) throws WorkerDaoException{
+  public List<String> findWorkersWorkingOnPlan(Plan plan) throws WorkerDaoException{
     try {
-      return zk.getChildren(PLANS_ZK + "/" + plan.getName(), false);
-    } catch (KeeperException | InterruptedException e) {
+      Stat exists = framework.getCuratorFramework().checkExists().forPath(PLAN_WORKERS_ZK + "/" + plan.getName());
+      if (exists == null ){
+        return new ArrayList<String>();
+      }
+      return framework.getCuratorFramework().getChildren().forPath(PLAN_WORKERS_ZK + "/" + plan.getName());
+    } catch (Exception e) {
       throw new WorkerDaoException(e);
-    }
+    }   
   }
+  
   /**
    * 
    * @param zk
@@ -142,10 +153,11 @@ public class WorkerDao {
    * @throws KeeperException
    * @throws InterruptedException
    */
-  public List<String> finalAllPlanNames (ZooKeeper zk) throws WorkerDaoException {
+  public List<String> finalAllPlanNames () throws WorkerDaoException {
     try {
-      return zk.getChildren(PLANS_ZK, false);
-    } catch (KeeperException | InterruptedException e) {
+      return this.framework.getCuratorFramework().getChildren().forPath(PLANS_ZK);
+    } catch (Exception e) {
+      LOGGER.warn(e);
       throw new WorkerDaoException(e);
     }
   }
@@ -153,22 +165,22 @@ public class WorkerDao {
   /**
    * Search zookeeper for a plan with given name.
    * 
-   * @param zk
    * @param name
    * @return null if plan not found, null if plan is corrupt data
    * @throws WorkerDaoException
    *           for zookeeper problems
    */
-  public Plan findPlanByName(ZooKeeper zk, String name) throws WorkerDaoException {
+  public Plan findPlanByName(String name) throws WorkerDaoException {
     Stat planStat;
     byte[] planBytes;
     try {
-      planStat = zk.exists(PLANS_ZK + "/" + name, false);
+      planStat = framework.getCuratorFramework().checkExists().forPath(PLANS_ZK + "/" + name);
       if (planStat == null) {
         return null;
       }
-      planBytes = zk.getData(PLANS_ZK + "/" + name, false, planStat);
-    } catch (KeeperException | InterruptedException e) {
+      planBytes = framework.getCuratorFramework().getData().forPath(PLANS_ZK + "/" + name);
+    } catch (Exception e) {
+      LOGGER.warn(e);
       throw new WorkerDaoException(e);
     }
     Plan p = null;
@@ -200,22 +212,24 @@ public class WorkerDao {
   /**
    * Creates or updates a plan in zookeeper.
    * @param plan
-   * @param zk
    * @throws WorkerDaoException if malformed plan or communication error with zookeeper
    */
-  public void createOrUpdatePlan(Plan plan, ZooKeeper zk) throws WorkerDaoException {
-      try {
-        createZookeeperBase(zk);
-        Stat s = zk.exists(PLANS_ZK+ "/" + plan.getName(), false);
-        if (s != null) {
-          zk.setData(PLANS_ZK+ "/" + plan.getName(), serializePlan(plan), s.getVersion());
-        } else {
-          zk.create(PLANS_ZK+ "/" + plan.getName(), serializePlan(plan), Ids.OPEN_ACL_UNSAFE,
-                  CreateMode.PERSISTENT);
-        }
-      } catch (KeeperException | InterruptedException e) {
-        throw new WorkerDaoException(e);
+  public void createOrUpdatePlan(Plan plan) throws WorkerDaoException {
+    try {
+      createZookeeperBase();
+      Stat s = this.framework.getCuratorFramework().checkExists().forPath(PLANS_ZK + "/" + plan.getName());
+      if (s != null) {
+        framework.getCuratorFramework().setData().withVersion(s.getVersion())
+                .forPath(PLANS_ZK + "/" + plan.getName(), serializePlan(plan));
+      } else {
+        framework.getCuratorFramework().create().withMode(CreateMode.PERSISTENT)
+                .withACL(Ids.OPEN_ACL_UNSAFE)
+                .forPath(PLANS_ZK + "/" + plan.getName(), serializePlan(plan));
       }
+    } catch (Exception e) {
+      LOGGER.warn(e);
+      throw new WorkerDaoException(e);
+    }
   }
   
   /**
@@ -224,41 +238,59 @@ public class WorkerDao {
    * @param d
    * @throws WorkerDaoException
    */
-  public void createEphemeralNodeForDaemon(ZooKeeper zk, TeknekDaemon d) throws WorkerDaoException {
+  public void createEphemeralNodeForDaemon(TeknekDaemon d) throws WorkerDaoException {
     try {
       byte [] hostbytes = d.getHostname().getBytes(ENCODING);
-      zk.create(WORKERS_ZK + "/" + d.getMyId(), hostbytes , Ids.OPEN_ACL_UNSAFE,
-              CreateMode.EPHEMERAL);
-    } catch (KeeperException | InterruptedException | UnsupportedEncodingException e) {
+      framework.getCuratorFramework().create()
+      .withMode(CreateMode.EPHEMERAL).withACL(Ids.OPEN_ACL_UNSAFE).forPath(WORKERS_ZK + "/" + d.getMyId(),
+              hostbytes);
+    } catch (Exception e) {
+      LOGGER.warn(e);
       throw new WorkerDaoException(e);
     }
   }
   
-  public List<String> findAllWorkers(ZooKeeper zk) throws WorkerDaoException {
+  public List<String> findAllWorkers() throws WorkerDaoException {
     try {
-      return zk.getChildren(WORKERS_ZK, false);
-    } catch (KeeperException | InterruptedException e) {
+      List<String> found = framework.getCuratorFramework().getChildren().forPath(WORKERS_ZK);
+      if (found == null){
+        return Arrays.asList();
+      } else {
+        return found;
+      }
+    } catch (Exception e) {
+      LOGGER.warn(e);
       throw new WorkerDaoException(e);
     }
   }
+  
   /**
    * Gets the status of each worker. The status contains the partitionId being consumed. This information
    * helps the next worker bind to an unconsumed partition
-   * @param zk
    * @param plan
    * @param otherWorkers
    * @return
    * @throws WorkerDaoException
    */
-  public List<WorkerStatus> findAllWorkerStatusForPlan(ZooKeeper zk, Plan plan, List<String> otherWorkers) throws WorkerDaoException{
+  public List<WorkerStatus> findAllWorkerStatusForPlan(Plan plan, List<String> otherWorkers) throws WorkerDaoException{
     List<WorkerStatus> results = new ArrayList<WorkerStatus>();
+    try {
+      Stat preCheck = framework.getCuratorFramework().checkExists().forPath(PLAN_WORKERS_ZK + "/" + plan.getName());
+      if (preCheck == null){
+        return results;
+      }
+    } catch (Exception e1) {
+      LOGGER.warn(e1);
+      throw new WorkerDaoException(e1);
+    }
     for (String worker : otherWorkers) {
-      String lookAtPath = PLANS_ZK + "/" + plan.getName() + "/" + worker;
+      String lookAtPath = PLAN_WORKERS_ZK + "/" + plan.getName() + "/" + worker;
       try {
-        Stat stat = zk.exists(lookAtPath, false);
-        byte[] data = zk.getData(lookAtPath, false, stat);
+        Stat stat = framework.getCuratorFramework().checkExists().forPath(lookAtPath);
+        byte[] data = framework.getCuratorFramework().getData().storingStatIn(stat).forPath(lookAtPath);
         results.add(MAPPER.readValue(data, WorkerStatus.class));
-      } catch (KeeperException | InterruptedException | IOException e) {
+      } catch (Exception e) {
+        LOGGER.warn(e);
         throw new WorkerDaoException(e);
       }
     }
@@ -266,34 +298,42 @@ public class WorkerDao {
   }
   
   /**
-   * Registers an ephemeral node representing ownership of a feed partition
+   * Registers an ephemeral node representing ownership of a feed partition.
+   * Note we do not use curator here because we want a standard watch not from the main thread!
    * @param zk
    * @param plan
    * @param s
    * @throws WorkerDaoException 
    */
   public void registerWorkerStatus(ZooKeeper zk, Plan plan, WorkerStatus s) throws WorkerDaoException{
-    String writeToPath = PLANS_ZK + "/" + plan.getName() + "/" + s.getWorkerUuid();
+    String writeToPath = PLAN_WORKERS_ZK + "/" + plan.getName() + "/" + s.getWorkerUuid();
     try {
+      Stat planBase = zk.exists(PLAN_WORKERS_ZK + "/" + plan.getName(), false);
+      if (planBase == null){
+        try {
+          zk.create(PLAN_WORKERS_ZK + "/" + plan.getName(), new byte [0] , Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+        } catch (Exception ignore){}
+      }
       zk.create(writeToPath, MAPPER.writeValueAsBytes(s), Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
       LOGGER.debug("Registered as ephemeral " + writeToPath);
-      zk.exists(PLANS_ZK+ "/" + plan.getName(), true);
+      zk.exists(PLANS_ZK + "/" + plan.getName(), true); //watch job for events
     } catch (KeeperException | InterruptedException | IOException e) {
+      LOGGER.warn(e);
       throw new WorkerDaoException(e);
     }
   }
   
-  public FeedDesc loadSavedFeedDesc(ZooKeeper zk, String group, String name) throws WorkerDaoException {
+  public FeedDesc loadSavedFeedDesc(String group, String name) throws WorkerDaoException {
     String readPath = SAVED_ZK + "/" + group + "-" + name + "-" + "feedDesc";
     try {
-      Stat stat = zk.exists(readPath, false);
+      Stat stat = framework.getCuratorFramework().checkExists().forPath(readPath);
       if (stat != null){
-        byte [] data = zk.getData(readPath, false, stat);
+        byte [] data = framework.getCuratorFramework().getData().storingStatIn(stat).forPath(readPath);
         return deserializeFeedDesc(data);
       } else {
         throw new WorkerDaoException("not found in zk");
       }
-    } catch (KeeperException | InterruptedException | IOException e) {
+    } catch (Exception e) {
       throw new WorkerDaoException(e);
     }
   }
@@ -316,7 +356,7 @@ public class WorkerDao {
   public void saveOperatorDesc(ZooKeeper zk, OperatorDesc desc, String group, String name)
           throws WorkerDaoException {
     String readPath = SAVED_ZK + "/" + group + "-" + name + "-" + "operatorDesc";
-    createZookeeperBase(zk);
+    createZookeeperBase();
     try {
       String pathCreated = zk.create(readPath, serializeOperatorDesc(desc), Ids.OPEN_ACL_UNSAFE,
               CreateMode.PERSISTENT);
@@ -329,7 +369,7 @@ public class WorkerDao {
   public void saveFeedDesc(ZooKeeper zk, FeedDesc desc, String group, String name)
           throws WorkerDaoException {
     String readPath = SAVED_ZK + "/" + group + "-" + name + "-" + "feedDesc";
-    createZookeeperBase(zk);
+    createZookeeperBase();
     try {
       String pathCreated = zk.create(readPath, serializeFeedDesc(desc), Ids.OPEN_ACL_UNSAFE,
               CreateMode.PERSISTENT);
@@ -398,30 +438,32 @@ public class WorkerDao {
   
   /**
    * Note you should call stop the plan if it is running before deleting 
-   * @param zk
    * @param p
    * @throws WorkerDaoException
    */
-  public void deletePlan(ZooKeeper zk, Plan p) throws WorkerDaoException {
+  public void deletePlan(Plan p) throws WorkerDaoException {
     String planNode = PLANS_ZK + "/" + p.getName();
     try {
-      Stat s = zk.exists(planNode, false);
-      if (s != null) {
-        zk.delete(planNode, s.getVersion());
-      }
-    } catch (KeeperException | InterruptedException e) {
+      Stat s = framework.getCuratorFramework().checkExists().forPath(planNode);
+      framework.getCuratorFramework().delete().withVersion(s.getVersion()).forPath(planNode);
+    } catch (Exception e) {
       throw new WorkerDaoException(e);
     }
   }
   
-  public void maybeCreatePlanLockDir(ZooKeeper zk, Plan plan) throws WorkerDaoException {
+  public void maybeCreatePlanLockDir(Plan plan) throws WorkerDaoException {
     try {
       String planLock = LOCKS_ZK + "/" + plan.getName();
-      if (zk.exists(planLock, false) == null) {
+      if (framework.getCuratorFramework().checkExists().forPath(planLock) == null) {
         LOGGER.debug("Creating " + planLock);
-        zk.create(planLock, new byte[0], Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+        try { 
+          framework.getCuratorFramework().create()
+            .withMode(CreateMode.PERSISTENT)
+            .withACL(Ids.OPEN_ACL_UNSAFE)
+            .forPath(planLock, new byte[0]);
+        } catch (NodeExistsException e){ }
       }
-    } catch (KeeperException | InterruptedException e) {
+    } catch (Exception e) {
       throw new WorkerDaoException(e);
     }
   }

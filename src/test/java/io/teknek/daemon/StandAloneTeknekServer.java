@@ -9,19 +9,17 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-//TODO we should make a main for this 
 public class StandAloneTeknekServer extends EmbeddedZooKeeperServer {
 
-  
   static TeknekDaemon td = null;
   
   @BeforeClass
-  public static void setup(){
+  public static void setup() throws InterruptedException {
     Properties props = new Properties();
-    props.put(TeknekDaemon.ZK_SERVER_LIST, zookeeperTestServer.getConnectString());
+    props.put(TeknekDaemon.ZK_SERVER_LIST, zookeeperTestServer.getInstanceSpec().getConnectString());
     td = new TeknekDaemon(props);
     td.init();
-    System.out.println("started zk on " +zookeeperTestServer.getConnectString());
+    System.out.println("started zk on " + zookeeperTestServer.getInstanceSpec().getConnectString());
   }
   
   @Ignore

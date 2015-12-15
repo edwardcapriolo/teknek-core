@@ -49,9 +49,9 @@ public class BadPlanNameTest extends EmbeddedZooKeeperServer {
   Plan p;
 
   @Before
-  public void setup() {
+  public void setup() throws InterruptedException {
     Properties props = new Properties();
-    props.put(TeknekDaemon.ZK_SERVER_LIST, zookeeperTestServer.getConnectString());
+    props.put(TeknekDaemon.ZK_SERVER_LIST, zookeeperTestServer.getInstanceSpec().getConnectString());
     td = new TeknekDaemon(props);
     td.init();
   }
@@ -64,7 +64,7 @@ public class BadPlanNameTest extends EmbeddedZooKeeperServer {
    */
   public static void createOrUpdateBadPlan(Plan plan, ZooKeeper zk, TeknekDaemon td) throws WorkerDaoException {
     try {
-      td.getWorkerDao().createZookeeperBase(zk);
+      td.getWorkerDao().createZookeeperBase();
       Stat s = zk.exists(td.getWorkerDao().PLANS_ZK + "/" + plan.getName() + "a", false);
       if (s != null) {
         zk.setData(td.getWorkerDao().PLANS_ZK + "/" + plan.getName() + "a", WorkerDao.serializePlan(plan),
@@ -88,7 +88,8 @@ public class BadPlanNameTest extends EmbeddedZooKeeperServer {
     p.setMaxWorkers(1);
     
     DummyWatcher dw = new DummyWatcher();
-    ZooKeeper zk = new ZooKeeper(zookeeperTestServer.getConnectString(),200, dw, false);
+    ZooKeeper zk = new ZooKeeper(zookeeperTestServer.getInstanceSpec().getConnectString(), 200, dw,
+            false);
     createOrUpdateBadPlan(p, zk, td);
     try {
       Thread.sleep(5000);

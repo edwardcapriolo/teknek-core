@@ -21,9 +21,9 @@ public class DisablePlanTest extends EmbeddedZooKeeperServer {
   private TeknekDaemon td1 = null;
 
   @Before
-  public void before() {
+  public void before() throws InterruptedException {
     Properties props = new Properties();
-    props.put(TeknekDaemon.ZK_SERVER_LIST, zookeeperTestServer.getConnectString());
+    props.put(TeknekDaemon.ZK_SERVER_LIST, zookeeperTestServer.getInstanceSpec().getConnectString());
     td = new TeknekDaemon(props);
     td.setRescanMillis(1000);
     td.init();
@@ -58,10 +58,9 @@ public class DisablePlanTest extends EmbeddedZooKeeperServer {
                             100000))).withRootOperator(new OperatorDesc(new TenSecondOperator()));
     p.setName("shutup");
     p.setMaxWorkers(1);
+    sleep(2000);
     td.applyPlan(p);
     sleep(2000);
-    Assert.assertNotNull(td.workerThreads);
-    Assert.assertTrue(td.workerThreads.get(p) != null || td1.workerThreads.get(p) != null);
     
     Assert.assertEquals(1, totalRunningThreadsForPlan(p));
     p.setDisabled(true);
