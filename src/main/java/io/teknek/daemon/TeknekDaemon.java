@@ -111,8 +111,7 @@ public class TeknekDaemon {
       graphiteReporter.setClusterName(properties.getProperty(GRAPHITE_CLUSTER));
       graphiteReporter.init();
     }
-    logger.info("Daemon id:" + myId);
-    logger.info("Connecting to:" + properties.getProperty(ZK_SERVER_LIST));
+    logger.info("Daemon id:" + myId + " Connecting to:" + properties.getProperty(ZK_SERVER_LIST));
     reKeeper.init();
       
     new Thread(){

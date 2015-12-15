@@ -1,8 +1,5 @@
 package io.teknek.zookeeper;
 
-import java.io.IOException;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.curator.RetryPolicy;
@@ -12,27 +9,21 @@ import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.log4j.Logger;
-import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
-import org.apache.zookeeper.Watcher.Event.KeeperState;
 
 public abstract class RestablishingKeeper {
 
   private final static Logger LOGGER = Logger.getLogger(RestablishingKeeper.class.getName());
-  private String hostList;
   private CuratorFramework client;
   private AtomicLong reEstablished = new AtomicLong(0);
   
   public RestablishingKeeper(String hostList)  {
-    this.hostList = hostList;
     RetryPolicy retryPolicy = new ExponentialBackoffRetry(1000, 5);
     client = CuratorFrameworkFactory.newClient(hostList, retryPolicy);
-    client.getConnectionStateListenable().addListener( new ConnectionStateListener(){
+    client.getConnectionStateListenable().addListener(new ConnectionStateListener(){
       @Override
       public void stateChanged(CuratorFramework framework, ConnectionState state) {
-        
-        //(event.getState() == KeeperState.Expired || event.getState() == KeeperState.Disconnected)
+        LOGGER.debug("State change "+ state);
         if (state.equals(ConnectionState.CONNECTED) || state.equals(ConnectionState.RECONNECTED)){
           reEstablished.incrementAndGet();
           try {
@@ -42,12 +33,11 @@ public abstract class RestablishingKeeper {
           }
         }
       }});
-
   }
-  public void init () throws InterruptedException {
+  
+  public void init() throws InterruptedException {
     client.start();
     client.blockUntilConnected();
-    System.out.println("initial connection");
   }
 
   /**
@@ -65,11 +55,11 @@ public abstract class RestablishingKeeper {
   }
   
   public CuratorFramework getCuratorFramework(){
-    return this.client;
+    return client;
   }
   
   public long getReestablished(){
-    return this.reEstablished.get();
+    return reEstablished.get();
   }
   
 }
