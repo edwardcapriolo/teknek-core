@@ -35,6 +35,7 @@ public class EmbeddedZooKeeperServer {
     properties.put(TeknekDaemon.ZK_SERVER_LIST, zookeeperTestServer.getInstanceSpec().getConnectString());
     final TeknekDaemon td = new TeknekDaemon(properties);
     td.init();
+    td.start();
     return td;
   }
   

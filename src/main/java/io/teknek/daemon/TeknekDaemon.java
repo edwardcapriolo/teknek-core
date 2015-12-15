@@ -51,7 +51,6 @@ public class TeknekDaemon {
   public static final String GRAPHITE_PORT = "teknek.graphite.port";
   public static final String GRAPHITE_CLUSTER = "teknek.graphite.cluster";
   
-  
   private int maxWorkers = 4;
   private String myId;
   private Properties properties;
@@ -114,28 +113,33 @@ public class TeknekDaemon {
     logger.info("Daemon id:" + myId + " Connecting to:" + properties.getProperty(ZK_SERVER_LIST));
     reKeeper.init();
       
+  }
+  
+  @VisibleForTesting
+  public void runOnce(){
+    try {
+      List<String> children = workerDao.finalAllPlanNames();
+      logger.debug("List of plans: " + children);
+      for (String child: children){
+        if (workerThreads.size() >= maxWorkers) {
+          logger.debug("Will not attempt to start worker. Already at max workers " + workerThreads.size());
+          return;
+        }
+        considerStarting(child);
+      }
+    } catch (WorkerDaoException e) {
+      logger.warn(e);
+    }  
+  }
+  
+  public void start(){
     new Thread(){
       public void run(){
         while (goOn){
-          if (workerThreads.size() < maxWorkers) {
-            try {
-              List<String> children = workerDao.finalAllPlanNames();
-              logger.debug("List of plans: " + children);
-              for (String child: children){
-                considerStarting(child);
-              }
-            } catch (WorkerDaoException e) {
-                logger.warn(e);
-            }  
-          } else {
-            logger.debug("Will not attempt to start worker. Already at max workers " + workerThreads.size());
-          }
-
+          runOnce();
           try {
             Thread.sleep(rescanMillis);
-          } catch (InterruptedException e) {
-            logger.warn(e);
-          }
+          } catch (InterruptedException e) { }
         }
       }
     }.start();
@@ -338,5 +342,6 @@ public class TeknekDaemon {
   public static void main (String [] args) throws InterruptedException {
     TeknekDaemon td = new TeknekDaemon(System.getProperties());
     td.init();
+    td.start();
   }  
 }
